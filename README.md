@@ -9,24 +9,28 @@ Briefly, Localiza website expects the invoices from Nota Carioca to be uploaded 
 
 In depth, the steps to the whole routine are as follows:
 
-1 – Identify jobs that are not to be ran through the script.
+#1 – Identify jobs that are not to be ran through the script.
+
 There are some jobs listed that do not apply, either because the job generated no value, or the value does not match the control.
 
 This step is to be done by scraping Localiza jobs dashboard into a dictionary or dataset and compare each pair of monetary value and job identifier with the analogous 	in the control dataset, accessed in a service called altem.com, that will also be transformed into a workable and comparable dataset.
 
 If the job is marked positive in this step, it will be skipped and analyzed manually.
 
-2 – Extract the specific Localiza company ID (CNPJ) from an e-mail PDF attachment.
+#2 – Extract the specific Localiza company ID (CNPJ) from an e-mail PDF attachment.
+
 Besides the Localiza data table, each job is also consolidated with an e-mail that contains information about the job, including price and identification.
 
 Localiza is made up from many different company IDs, based on location. The job will carry the specific company ID based on where it physically happened. The control website, altem.com, does not have this information, thus, it had to be inputted manually. 
 
 Upon locating the e-mail and extracting the CPNJ number within the standard PDF layout, it will be stored for later and altem.com will be updated automatically, using Selenium, with the last 4 numbers on the CNPJ identifier, as it requires.
 
-3 – Update the current job on Localiza dashboard with pertinent information.
+#3 – Update the current job on Localiza dashboard with pertinent information.
+
 Each job needs to be filled with standard and designated data, on it’s own panel within the Localiza dashboard, such as Reboque company CNPJ and other job specific data, respectively. Other data include, date, job value and others. It will be done using Selenium. Fixed data will be stored beforehand and changing information, such as job data, will be scrapped.
 
-4 – Download the invoice from Nota Carioca website and upload it to Localiza.
+#4 – Download the invoice from Nota Carioca website and upload it to Localiza.
+
 The last field to be filled within the current job’s panel is the invoice itself. It will be acquired on Nota Carioca website. 
 
 After logging in, the job’s location specific CNPJ that was extracted from the e-mail’s PDF will be inputted, and the site will offer the invoice, including a download option, after which, the file location will be stored and fed to Localiza.
