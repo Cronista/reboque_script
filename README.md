@@ -35,4 +35,4 @@ The last field to be filled within the current job’s panel is the invoice itse
 
 After logging in, the job’s location specific CNPJ that was extracted from the e-mail’s PDF will be inputted, and the site will offer the invoice, including a download option, after which, the file location will be stored and fed to Localiza.
 
-This will be the main cycle. Logs will be generated with every relevant step, for control and debugging. Initially, the user will have to inform how many jobs will be checked and ran. There will be no GUI, for the moment.
+This will be the main cycle. Logs will be generated with every relevant step, for control and debugging. Initially, the user will have to inform how many jobs will be checked and ran through a JSON file. There will be no GUI, for the moment.
