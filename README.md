@@ -13,7 +13,7 @@ In depth, the steps to the whole routine are as follows:
 
 There are some jobs listed that do not apply, either because the job generated no value, or the value does not match the control.
 
-This step is to be done by scrapping Localiza jobs dashboard into a dictionary or dataset and compare each pair of monetary value and job identifier with the analogous 	in the control dataset, accessed in a service called altem.com, that will also be transformed into a workable and comparable dataset.
+This step is to be done by scraping Localiza jobs dashboard into a dictionary or dataset and compare each pair of monetary value and job identifier with the analogous 	in the control dataset, accessed in a service called altem.com, that will also be transformed into a workable and comparable dataset.
 
 If the job is marked positive in this step, it will be skipped and analyzed manually.
 
@@ -27,7 +27,7 @@ Upon locating the e-mail and extracting the CPNJ number within the standard PDF 
 
 #3 – Update the current job on Localiza dashboard with pertinent information.
 
-Each job needs to be filled with standard and designated data, on it’s own panel within the Localiza dashboard, such as Reboque company CNPJ and other job specific data, respectively. Other data include, date, job value and others. It will be done using Selenium. Fixed data will be stored beforehand and changing information, such as job data, will be scrapped.
+Each job needs to be filled with standard and designated data, on it’s own panel within the Localiza dashboard, such as Reboque company CNPJ and other job specific data, respectively. Other data include, date, job value and others. It will be done using Selenium. Fixed data will be stored beforehand and changing information, such as job data, will be scraped.
 
 #4 – Download the invoice from Nota Carioca website and upload it to Localiza.
 
