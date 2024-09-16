@@ -21,7 +21,7 @@ If the job is marked positive in this step, it will be skipped and analyzed manu
 
 Besides the Localiza data table, each job is also consolidated with an e-mail that contains information about the job, including price and identification.
 
-Localiza is made up from many different company IDs, based on location. The job will carry the specific company ID based on where it physically happened. The control website, altem.com, does not have this information, thus, it had to be inputted manually. 
+Localiza is made up of many different company IDs, based on location. The job will carry the specific company ID based on where it physically happened. The control website, altem.com, does not have this information, thus, it had to be inputted manually. 
 
 Upon locating the e-mail and extracting the CPNJ number within the standard PDF layout, it will be stored for later and altem.com will be updated automatically, using Selenium, with the last 4 numbers on the CNPJ identifier, as it requires.
 
