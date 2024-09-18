@@ -3,7 +3,7 @@ An automated routine for manual labourous tasks executed within a service in a t
 
 The task objective is to generate digital invoices to services rendered with the company. More specifically, the company in question, Reboque, works with another company, Localiza, to which the services are offered.
 
-There are four external services used for the task. E-mail provider (Google), Localiza, Altem and Nota Carioca. All of those require credentials to initiate the task. The login will be executed by Selenium before the steps begin.
+There are four external services used for the task. E-mail provider (Google), Localiza, Altem and Nota Carioca. All of those are utilized in the same system, Google Chrome, and require credentials to initiate the task. The login will be executed by Selenium before the steps begin.
 
 Briefly, Localiza website expects the invoices from Nota Carioca to be uploaded to each job listed.
 
