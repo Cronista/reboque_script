@@ -1,5 +1,5 @@
 # reboque_script
-An automated routine for manual labourous tasks executed within a service in a towing company.
+Automated routine for manual labourous tasks executed within a service in a towing company.
 
 The task objective is to generate digital invoices to services rendered with the company. More specifically, the company in question, Reboque, works with another company, Localiza, to which the services are offered.
 
