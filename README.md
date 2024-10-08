@@ -27,7 +27,7 @@ Upon locating the e-mail and extracting the CPNJ number within the standard PDF 
 
 #3 – Update the current job on Localiza dashboard with pertinent information.
 
-Each job needs to be filled with standard and changing data, on it’s own panel within the Localiza dashboard, such as Reboque company CNPJ and other job specific data, respectively. Other data include, date, job value and others. It will be done using Selenium. Fixed data will be stored beforehand and changing information, such as job data, will be scraped.
+Each job needs to be filled with standard and changing data on it’s own panel within the Localiza dashboard, such as Reboque company CNPJ and other job specific data. Other data include, date, job value and others. Static data will be stored beforehand and changing information will be scraped.
 
 #4 – Download the invoice from Nota Carioca website and upload it to Localiza.
 
@@ -35,4 +35,5 @@ The last field to be filled within the current job’s panel is the invoice itse
 
 After logging in, the job’s location specific CNPJ that was extracted from the e-mail’s PDF will be inputted, and the site will offer the invoice, including a download option, after which, the file location will be stored and fed to Localiza.
 
-This will be the main cycle. Logs will be generated with every relevant step, for control and debugging. Initially, the user will have to inform how many jobs will be checked and ran through a JSON file. There will be no GUI, for the moment.
+
+This will be the main cycle. Logs will be generated with every relevant step, for control and debugging. Initially, the user will have to inform how many jobs will be checked and ran through a JSON, or other text file. There will be no GUI, for the moment.
