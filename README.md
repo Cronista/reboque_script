@@ -13,7 +13,7 @@ In depth, the steps to the whole routine are as follows:
 
 There are some jobs listed that do not apply, either because the job generated no value, or the value does not match the control.
 
-This step is to be done by scraping Localiza job dashboard into a dictionary or dataset and compare each pair of monetary value and job identifier with the analogous in the control dataset, accessed in a service called autem.com, that will also be transformed into a workable and comparable dataset. The rule will be: if the value is lower, it will be marked positive. If the value is equal or greater, it will be marked negative.
+This step is to be done by scraping Localiza job dashboard into a dictionary or dataset and compare each pair of monetary value and job identifier with the analogous in the control dataset, accessed in a service called autem.com, that will also be transformed into a workable and comparable dataset.
 
 If the job is marked positive in this step, it will be skipped and analyzed manually.
 
