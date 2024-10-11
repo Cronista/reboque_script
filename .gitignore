@@ -19,3 +19,4 @@ TEST_JS_HELIUM/defillama_protocols20241006-002956_1000.csv
 TEST_JS_HELIUM/defi_DF.py
 TEST_JS_HELIUM/defillama_protocols20241007-210848_na_15.csv
 TEST_JS_HELIUM/defillama_protocols20241007-211718_131.csv
+db.env
