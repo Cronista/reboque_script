@@ -17,7 +17,7 @@ browser = start_chrome(url, headless=False)
 # # wait page to load
 # time.sleep(1)
 
-#define login fields CSS element and input credentials
+#define login field's CSS elements and input credentials
 login_user = S('#txt-login-new')
 login_pass = S('#txt-senha')
 write(login_user_localiza, into=login_user)
@@ -26,41 +26,53 @@ click('Acessar Portal Localiza')
 
 wait_until(S('tbody').exists)
 
-table = S('tbody')
+soup = BeautifulSoup(browser.page_source, 'html.parser')
 
-print(table.web_element.tag_name)
+job_table = soup.find('tbody')
 
-# for protocol in table[2]:
+job_list = []
+i = 0
+ 
+for job in job_table:
     
-#     index_current = int(protocol.select_one('div:nth-of-type(1)').select_one('span > span').text)
+    i += 1
     
-#     if index_current <= index:
-        
-#         continue
+    if i < 3:
+        continue
     
-#     index += 1
+    print(job)
     
-#     try:
+    # index_current = int(protocol.select_one('div:nth-of-type(1)').select_one('span > span').text)
     
-#         protocols_dict = {
-            
-#             'name': protocol.select_one('div:nth-of-type(1)').find('a').text,
-#             'category': protocol.select_one('div:nth-of-type(2)').find('a').text,
-#             'tvl': protocol.select_one('div:nth-of-type(3)').select_one('span > span').text,
-#             '1d change': protocol.select_one('div:nth-of-type(4)').find('span').text,
-#             '7d change': protocol.select_one('div:nth-of-type(5)').find('span').text,
-#             '1m change': protocol.select_one('div:nth-of-type(6)').find('span').text,
-#             'fee 24h': protocol.select_one('div:nth-of-type(7)').text,
-#             'revenue 24h': protocol.select_one('div:nth-of-type(8)').text,
-#             'spot volume': protocol.select_one('div:nth-of-type(9)').text
-            
-            
-#         }
+    # if index_current <= index:
+        
+    #     continue
+    
+    # index += 1
+    
+    # try:
+    
+    job_dict = {
+        
+        'SS': job.select_one('tr#data-id-ref').text,
+        # 'category': protocol.select_one('div:nth-of-type(2)').find('a').text,
+        # 'tvl': protocol.select_one('div:nth-of-type(3)').select_one('span > span').text,
+        # '1d change': protocol.select_one('div:nth-of-type(4)').find('span').text,
+        # '7d change': protocol.select_one('div:nth-of-type(5)').find('span').text,
+        # '1m change': protocol.select_one('div:nth-of-type(6)').find('span').text,
+        # 'fee 24h': protocol.select_one('div:nth-of-type(7)').text,
+        # 'revenue 24h': protocol.select_one('div:nth-of-type(8)').text,
+        # 'spot volume': protocol.select_one('div:nth-of-type(9)').text
         
         
-#         protocols_list.append(protocols_dict)
+    }
+    
+    
+    job_list.append(job_dict)
         
-#     except AttributeError as e:
-#         continue
+    # except AttributeError as e:
+    #     continue
+    
+# print(job_list)
         
-# browser.quit()
+browser.quit()
