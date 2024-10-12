@@ -31,16 +31,8 @@ soup = BeautifulSoup(browser.page_source, 'html.parser')
 job_table = soup.find('tbody')
 
 job_list = []
-i = 0
  
 for job in job_table:
-    
-    i += 1
-    
-    if i < 3:
-        continue
-    
-    print(job)
     
     # index_current = int(protocol.select_one('div:nth-of-type(1)').select_one('span > span').text)
     
@@ -50,29 +42,35 @@ for job in job_table:
     
     # index += 1
     
-    # try:
-    
-    job_dict = {
+    try:
         
-        'SS': job.select_one('tr#data-id-ref').text,
-        # 'category': protocol.select_one('div:nth-of-type(2)').find('a').text,
-        # 'tvl': protocol.select_one('div:nth-of-type(3)').select_one('span > span').text,
-        # '1d change': protocol.select_one('div:nth-of-type(4)').find('span').text,
-        # '7d change': protocol.select_one('div:nth-of-type(5)').find('span').text,
-        # '1m change': protocol.select_one('div:nth-of-type(6)').find('span').text,
-        # 'fee 24h': protocol.select_one('div:nth-of-type(7)').text,
-        # 'revenue 24h': protocol.select_one('div:nth-of-type(8)').text,
-        # 'spot volume': protocol.select_one('div:nth-of-type(9)').text
+        job_dict = {
+            
+            'SS': job.find('td', {'class': 'localiza-o'}).find('span').text.strip(),
+            'Placa': job.select_one('td:nth-of-type(3)').text.strip(),
+            'Conclusao': job.select_one('td:nth-of-type(4)').text.strip(),
+            'CNPJ Fornecedor': job.select_one('td:nth-of-type(5)').text.strip(),
+            'Faturamento': job.select_one('td:nth-of-type(7)').text.strip(),
+            'Notas Anexadas': job.select_one('td:nth-of-type(8)').text.strip(),
+            'Forma de Pagamento': job.select_one('td:nth-of-type(9)').text.strip(),
+            # 'category': protocol.select_one('div:nth-of-type(2)').find('a').text,
+            # 'tvl': protocol.select_one('div:nth-of-type(3)').select_one('span > span').text,
+            # '1d change': protocol.select_one('div:nth-of-type(4)').find('span').text,
+            # '7d change': protocol.select_one('div:nth-of-type(5)').find('span').text,
+            # '1m change': protocol.select_one('div:nth-of-type(6)').find('span').text,
+            # 'fee 24h': protocol.select_one('div:nth-of-type(7)').text,
+            # 'revenue 24h': protocol.select_one('div:nth-of-type(8)').text,
+            # 'spot volume': protocol.select_one('div:nth-of-type(9)').text
+            
+            
+        }
+            
+            
+        job_list.append(job_dict)
         
-        
-    }
+    except (AttributeError, TypeError) as e:
+        continue
     
-    
-    job_list.append(job_dict)
-        
-    # except AttributeError as e:
-    #     continue
-    
-# print(job_list)
+print(job_list)
         
 browser.quit()
