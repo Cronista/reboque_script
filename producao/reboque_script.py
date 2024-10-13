@@ -87,7 +87,7 @@ def jobs_autem():
     #set up Helium for Autem
     #set download path to the built in "Export to Excel" function on Autem
     options = webdriver.ChromeOptions()
-    prefs = {'download.default_directory': 'producao\jobs_csv'} 
+    prefs = {'download.default_directory': os.path.join(os.getcwd(), 'jobs_csv')} 
     options.add_experimental_option('prefs', prefs)
     browser = start_chrome("https://web.autem.com.br/servicos/visualizar/", headless=False, options=options)
 
@@ -99,7 +99,15 @@ def jobs_autem():
     write(login_user_autem, into=login_user)
     write(login_pass_autem, into=login_pass)
     click('Acessar Sistema')
-            
+    
+    #wait until the page is loaded
+    wait_until(S('#mapa_relatorio').exists)
+    
+    go_to('https://web.autem.com.br/servicos/visualizar/')
+    
+    #wait until the export button is loaded and click it
+    wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples').exists)
+    click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
     browser.quit()
     
 jobs_autem()
