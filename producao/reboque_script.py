@@ -1,8 +1,11 @@
 from helium import *
+from selenium import webdriver
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import csv, os, time
-from selenium import webdriver
+import pandas as pd
+import numpy as np
+
 
 #set timestamp to name files
 timestamp = time.strftime("%Y%m%d-%H%M%S")
@@ -87,7 +90,7 @@ def jobs_autem():
     #set up Helium for Autem
     #set download path to the built in "Export to Excel" function on Autem
     options = webdriver.ChromeOptions()
-    prefs = {'download.default_directory': os.path.join(os.getcwd(), 'jobs_csv')} 
+    prefs = {'download.default_directory': os.path.join(os.getcwd(), 'producao', 'jobs_csv')} 
     options.add_experimental_option('prefs', prefs)
     browser = start_chrome("https://web.autem.com.br/servicos/visualizar/", headless=False, options=options)
 
@@ -108,6 +111,12 @@ def jobs_autem():
     #wait until the export button is loaded and click it
     wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples').exists)
     click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
+    
+    #wait download to finish
+    time.sleep(3)
     browser.quit()
     
+jobs_localiza()    
 jobs_autem()
+
+##Pandas
