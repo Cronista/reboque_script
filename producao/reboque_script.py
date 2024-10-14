@@ -116,7 +116,42 @@ def jobs_autem():
     time.sleep(3)
     browser.quit()
     
-jobs_localiza()    
-jobs_autem()
+# jobs_localiza()    
+# jobs_autem()
 
 ##Pandas
+#Compare job lists
+
+#set up job lists dataframes
+df_localiza = pd.read_csv('producao\jobs_csv\localiza_20241013-164030.csv')
+df_autem = pd.read_excel('producao\jobs_csv\exportGrid_AutEM_xls.xlsx', header= 1)
+
+#treat Not a Number
+df_autem = df_autem.replace(np.nan, 'Sem OBS')
+
+#standardize data between dataframes
+#rename df_autem columns to match df_localiza
+df_autem = df_autem.rename(columns= {'Protocolo': 'ss', 'Valor (R$)': 'faturamento'})
+#make the values from df_localiza 'faturamento' column to match df_autem
+df_localiza['faturamento'] = (df_localiza['faturamento']
+               .str.replace('R\$', '', regex=True)
+               .str.replace('.', '', regex=False) 
+               .str.replace(',', '.', regex=False)
+              )
+#convert every non text to float, in df_localiza 'faturamento' column
+for index_df_localiza_items, value_df_localiza_items in df_localiza['faturamento'].items():
+    
+    if value_df_localiza_items != 'Conforme Contrato':
+    
+        df_localiza.at[index_df_localiza_items, 'faturamento'] = pd.to_numeric(value_df_localiza_items)
+    
+    else:
+        
+        continue
+    
+#Compare ss to value
+print(df_localiza['ss'][0] in df_autem['ss'])
+
+# print(df_localiza.head())
+# print('\n')
+# print(df_autem.head())
