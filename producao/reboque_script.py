@@ -122,7 +122,7 @@ def jobs_autem():
 ##Pandas
 #Compare job lists
 
-#set up job lists dataframes
+#set up job list dataframes
 df_localiza = pd.read_csv('producao\jobs_csv\localiza_20241013-164030.csv')
 df_autem = pd.read_excel('producao\jobs_csv\exportGrid_AutEM_xls.xlsx', header= 1)
 
@@ -138,7 +138,7 @@ df_localiza['faturamento'] = (df_localiza['faturamento']
                .str.replace('.', '', regex=False) 
                .str.replace(',', '.', regex=False)
               )
-#convert every non text to float, in df_localiza 'faturamento' column
+#convert every non "Conforme Contrato" text to float, in df_localiza 'faturamento' column
 for index_df_localiza_items, value_df_localiza_items in df_localiza['faturamento'].items():
     
     if value_df_localiza_items != 'Conforme Contrato':
