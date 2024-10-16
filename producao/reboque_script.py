@@ -152,23 +152,12 @@ def jobs_autem():
 df_localiza = pd.read_csv('producao\jobs_csv\localiza_.csv')
 df_autem = pd.read_excel('producao\jobs_csv\exportGrid_AutEM_xls.xlsx', header= 1)
 
-#
-print(df_localiza.sample(10))
-print('\n')
-print(df_autem.sample(10))
-
-#treat Not a Number
-df_autem = df_autem.replace(np.nan, 'Sem OBS')
-
-#
-print(df_autem.sample(10))
+# #treat Not a Number
+# df_autem = df_autem.replace(np.nan, 'Sem OBS')
 
 #standardize data between dataframes
 #rename df_autem columns to match df_localiza
-df_autem = df_autem.rename(columns= {'Protocolo': 'ss', 'Valor (R$)': 'faturamento'})
-
-#
-print(df_autem.sample(10))
+df_autem = df_autem.rename(columns= {'Protocolo': 'ss', 'Valor (R$)': 'faturamento', 'Data e Hora Finalizado': 'conclusao', 'CNPJ': 'cnpj_fornecedor', 'Placa': 'placa'})
 
 #make the values from df_localiza 'faturamento' column to match df_autem
 df_localiza['faturamento'] = (df_localiza['faturamento']
@@ -177,10 +166,7 @@ df_localiza['faturamento'] = (df_localiza['faturamento']
                .str.replace(',', '.', regex=False)
               )
 
-#
-print(df_localiza.sample(10))
-
-#convert every non text to float, in df_localiza 'faturamento' column
+#convert every non 'Conforme Contrato' text to float, in df_localiza 'faturamento' column
 for index_df_localiza_items, value_df_localiza_items in df_localiza['faturamento'].items():
     
     if value_df_localiza_items != 'Conforme Contrato':
@@ -191,10 +177,21 @@ for index_df_localiza_items, value_df_localiza_items in df_localiza['faturamento
         
         continue
     
-print(df_localiza.sample(10))
+#drop unused columns
+df_autem = df_autem.drop([
+    'Data e Hora', 'Empresa', 'Produto', 'Documento(s)', 'Checklist / CR / GRV', 'Checklist', 'Tipo de Serviço', 'Veículo / Objeto', 
+    'Cor', 'Chassi', 'Renavam', 'Beneficiário', 'Senha', 'Telefone', 'O. Logradouro', 'O. Bairro','O. Cidade', 'D. Logradouro','D. Bairro', 'D. Cidade', 'Profissional',
+    'Viatura', 'Descrição', 'Tags', 'KM', 'Pedágio (R$)', 'Hora Parada (R$)', 'Hora Trabalhada (R$)', 'OBS', 'Ocorrência(s)', 'cnpj_fornecedor', 'conclusao']
+    , axis=1)
+df_localiza = df_localiza.drop([
+    'notas_anexadas', 'forma_de_pagamento', 'cnpj_fornecedor', 'conclusao']
+     , axis=1)
     
 #Compare ss to value
-print(df_localiza['ss'][0] in df_autem['ss'])
+# print(df_localiza['faturamento'].isin(df_autem['faturamento']))
+print(pd.merge(df_localiza, df_autem, on='ss', how='left'))
+
+
 
 # print(df_localiza.head())
 # print('\n')
