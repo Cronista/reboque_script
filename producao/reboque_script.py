@@ -5,10 +5,12 @@ from dotenv import load_dotenv
 import csv, os, time
 import pandas as pd
 import numpy as np
+from datetime import datetime, timedelta
 
 
-#set timestamp to name files
-timestamp = time.strftime("%Y%m%d-%H%M%S")
+#set time variables to name files and other functions
+timestamp = time.strftime('%Y%m%d-%H%M%S')
+timestamp_autem_filter = (datetime.now() - timedelta(days=10)).strftime('%d/%m/%Y %H:%M')
 
 #path to deploy dotenv
 env_path = ('producao\db.env')
@@ -74,8 +76,8 @@ def jobs_localiza():
         
     #save to csv file
     headers = ['ss', 'placa', 'conclusao', 'cnpj_fornecedor', 'faturamento', 'notas_anexadas', 'forma_de_pagamento']
-
-    with open(f"producao\jobs_csv\localiza_{timestamp}.csv", "w", newline="", encoding="utf-8") as file:
+               #"producao\jobs_csv\localiza_{timestamp}.csv"
+    with open(f"producao\jobs_csv\localiza_.csv", "w", newline="", encoding="utf-8") as file:
         
         writer = csv.DictWriter(file, fieldnames=headers)
         writer.writeheader()
@@ -87,10 +89,21 @@ def jobs_localiza():
 #get jobs from autem
 def jobs_autem():
     
+    #set file paths
+    autem_jobs_file_path = os.path.join(os.getcwd(), 'producao', 'jobs_csv')
+    autem_jobs_file = os.path.join(autem_jobs_file_path, 'exportGrid_AutEM_xls.xlsx')
+    
     #set up Helium for Autem
-    #set download path to the built in "Export to Excel" function on Autem
+    #set download path to the built in "Export to Excel" function on Autem and configures the browser
     options = webdriver.ChromeOptions()
-    prefs = {'download.default_directory': os.path.join(os.getcwd(), 'producao', 'jobs_csv')} 
+    prefs = {
+        
+        'download.default_directory': autem_jobs_file_path,
+        'download.prompt_for_download': False,
+        'download.directory_upgrade': True, 
+        'safebrowsing.enabled': True
+             
+             } 
     options.add_experimental_option('prefs', prefs)
     browser = start_chrome("https://web.autem.com.br/servicos/visualizar/", headless=False, options=options)
 
@@ -103,13 +116,26 @@ def jobs_autem():
     write(login_pass_autem, into=login_pass)
     click('Acessar Sistema')
     
-    #wait until the page is loaded
+    #wait until the page is loaded and navigate to jobs dashboard
     wait_until(S('#mapa_relatorio').exists)
-    
     go_to('https://web.autem.com.br/servicos/visualizar/')
     
-    #wait until the export button is loaded and click it
+    #change table filter parameters to include more data (about 3 days, 300 entries)
+    wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)
+    click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
+    wait_until(S('#filtro_de').exists)
+    get_driver().execute_script("arguments[0].value = '';", S('#filtro_de').web_element)
+    write(timestamp_autem_filter, into=S('#filtro_de'))
+    click(S('#btn_filtrar'))
+    
+    #wait until the export button is loaded, delete current file in the directory and click the download (export) button
+    #this is done so the file is not renamed to "...(1)". The files will always be copied-over updated.
     wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples').exists)
+   
+    if os.path.exists(autem_jobs_file):
+        
+        os.remove(autem_jobs_file)
+
     click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
     
     #wait download to finish
@@ -123,21 +149,37 @@ def jobs_autem():
 #Compare job lists
 
 #set up job lists dataframes
-df_localiza = pd.read_csv('producao\jobs_csv\localiza_20241013-164030.csv')
+df_localiza = pd.read_csv('producao\jobs_csv\localiza_.csv')
 df_autem = pd.read_excel('producao\jobs_csv\exportGrid_AutEM_xls.xlsx', header= 1)
+
+#
+print(df_localiza.sample(10))
+print('\n')
+print(df_autem.sample(10))
 
 #treat Not a Number
 df_autem = df_autem.replace(np.nan, 'Sem OBS')
 
+#
+print(df_autem.sample(10))
+
 #standardize data between dataframes
 #rename df_autem columns to match df_localiza
 df_autem = df_autem.rename(columns= {'Protocolo': 'ss', 'Valor (R$)': 'faturamento'})
+
+#
+print(df_autem.sample(10))
+
 #make the values from df_localiza 'faturamento' column to match df_autem
 df_localiza['faturamento'] = (df_localiza['faturamento']
                .str.replace('R\$', '', regex=True)
                .str.replace('.', '', regex=False) 
                .str.replace(',', '.', regex=False)
               )
+
+#
+print(df_localiza.sample(10))
+
 #convert every non text to float, in df_localiza 'faturamento' column
 for index_df_localiza_items, value_df_localiza_items in df_localiza['faturamento'].items():
     
@@ -148,6 +190,8 @@ for index_df_localiza_items, value_df_localiza_items in df_localiza['faturamento
     else:
         
         continue
+    
+print(df_localiza.sample(10))
     
 #Compare ss to value
 print(df_localiza['ss'][0] in df_autem['ss'])
