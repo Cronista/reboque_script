@@ -166,7 +166,7 @@ def jobs_localiza_autem():
     
 ##Pandas
 #Compare job lists
-#TODO job value not coming ou as supposed (2MJKTA/30 as exemple: real value: 290,0, exiting: 29,00)
+#TODO job value not coming ou as supposed (2MJKTA/30 as example: real value: 290,0, exiting: 29,00)
     #change to brazilian decimal treatment
 def jobs_pandas():
     
