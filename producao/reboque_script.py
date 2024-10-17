@@ -1,8 +1,5 @@
 from helium import *
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import csv, os, time
@@ -25,16 +22,35 @@ login_user_localiza = os.environ['LOGIN_USER_LOCALIZA']; login_pass_localiza = o
 #set up credentials for Autem
 login_user_autem = os.environ['LOGIN_USER_AUTEM']; login_pass_autem = os.environ['LOGIN_PASS_AUTEM']; login_code_autem = os.environ['LOGIN_CODE_AUTEM']
 
-##Localiza
-#get jobs from localiza
-def jobs_localiza():
+##Localiza, Autem
+#get jobs from localiza and autem
+def jobs_localiza_autem():
     
-    #set up Helium for Localiza
-    url = "https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio"
-    browser = start_chrome(url, headless=False)
+    #set file paths
+    jobs_file_path = os.path.join(os.getcwd(), 'producao', 'jobs_csv')
+    autem_jobs_file = os.path.join(jobs_file_path, 'exportGrid_AutEM_xls.xlsx')
+    
+    #Localiza
+    #initiate browser
+    options = webdriver.ChromeOptions()
+    prefs = {
+        
+        'download.default_directory': jobs_file_path,
+        'download.prompt_for_download': False,
+        'download.directory_upgrade': True, 
+        'safebrowsing.enabled': True
+             
+             } 
+    options.add_experimental_option('prefs', prefs)
+    browser = start_chrome("https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio", headless=False, options=options)
+    
+    #TODO treat page not loading
+    
+    #tabs management 
+    localiza_browser_tab = browser.current_window_handle
 
     #wait page to load
-    # time.sleep(1)
+    wait_until(S('#txt-login-new').exists)
 
     #define login field's CSS elements and input credentials
     login_user = S('#txt-login-new')
@@ -86,45 +102,13 @@ def jobs_localiza():
         writer.writeheader()
         writer.writerows(job_list_localiza)
     
-    jobs_autem()
-
-    #refresh browser and access cleared jobs with the return value from jobs_pandas
-    #TODO stop webdriver from crashing
-    clear_ss, not_clear_ss = jobs_pandas()
-    refresh()
-    wait_until(S('tbody').exists)
+    #Autem
+    #switch to another tab and access autem.com
+    browser.execute_script("window.open('https://web.autem.com.br/servicos/visualizar/', '_blank');")
+    all_tabs = browser.window_handles
+    autem_browser_tab = all_tabs[-1]
+    browser.switch_to.window(autem_browser_tab)
     
-    for job_cleared in clear_ss:
-        
-        click(job_cleared['ss'])
-        wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
-        write(job_cleared['faturamento'], into=S('#NFList > tbody > tr > td:nth-child(6) > div > input'))
-         
-
-    browser.quit()
-    
-##Autem
-#get jobs from autem
-def jobs_autem():
-    
-    #set file paths
-    autem_jobs_file_path = os.path.join(os.getcwd(), 'producao', 'jobs_csv')
-    autem_jobs_file = os.path.join(autem_jobs_file_path, 'exportGrid_AutEM_xls.xlsx')
-    
-    #set up Helium for Autem
-    #set download path to the built in "Export to Excel" function on Autem and configures the browser
-    options = webdriver.ChromeOptions()
-    prefs = {
-        
-        'download.default_directory': autem_jobs_file_path,
-        'download.prompt_for_download': False,
-        'download.directory_upgrade': True, 
-        'safebrowsing.enabled': True
-             
-             } 
-    options.add_experimental_option('prefs', prefs)
-    browser = start_chrome("https://web.autem.com.br/servicos/visualizar/", headless=False, options=options)
-
     #define login field's CSS elements and input credentials
     login_code = S('#frm-codigo-cliente')
     login_user = S('#frm-login')
@@ -138,8 +122,11 @@ def jobs_autem():
     wait_until(S('#mapa_relatorio').exists)
     go_to('https://web.autem.com.br/servicos/visualizar/')
     
-    #change table filter parameters to include more data (about 3 days, 300 entries)
+    #change table filter parameters to include more data (about 10 days)
+    wait_until(S('#datatable_servicos > tbody').exists)
     wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)
+    wait_until(S('#main-wrapper > div.page-wrapper > div > div:nth-child(5) > div > div > div > div > div').exists)
+    wait_until(S('#datatable_servicos_info').exists)
     click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
     wait_until(S('#filtro_de').exists)
     get_driver().execute_script("arguments[0].value = '';", S('#filtro_de').web_element)
@@ -148,10 +135,8 @@ def jobs_autem():
     
     #wait until the export button is loaded, delete current file in the directory and click the download (export) button
     #this is done so the file is not renamed to "...(1)". The files will always be copied-over updated.
-    #TODO wait until table is loaded
-    #wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples').exists)
-    wait_until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples')))
-    
+    wait_until(S('#datatable_servicos > tbody').exists)
+     
     if os.path.exists(autem_jobs_file):
         
         os.remove(autem_jobs_file)
@@ -162,11 +147,27 @@ def jobs_autem():
     while os.path.exists(autem_jobs_file) == False:
         
         time.sleep(1)
-        
-    browser.quit()
 
+    #Localiza
+    #access cleared jobs with the return value from jobs_pandas
+    browser.switch_to.window(localiza_browser_tab)
+    clear_ss, not_clear_ss = jobs_pandas()
+    
+    for job_cleared in clear_ss:
+        
+        click(job_cleared['ss'])
+        wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
+        write(job_cleared['faturamento'], into=S('#NFList > tbody > tr > td:nth-child(6) > div > input'))
+        
+        break
+         
+
+    browser.quit()
+    
 ##Pandas
 #Compare job lists
+#TODO job value not coming ou as supposed (2MJKTA/30 as exemple: real value: 290,0, exiting: 29,00)
+    #change to brazilian decimal treatment
 def jobs_pandas():
     
     #set up job lists dataframes
@@ -237,7 +238,7 @@ def jobs_pandas():
             
             not_clear_ss.append(not_clear_ss_dict)
             
-    print(clear_ss[0]['ss'])
+    print(clear_ss[0]['faturamento'])
     return clear_ss, not_clear_ss
 
-jobs_localiza()
+jobs_localiza_autem()
