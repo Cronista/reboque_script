@@ -104,7 +104,7 @@ def jobs_localiza_autem():
     
     #Autem
     #switch to another tab and access autem.com
-    browser.execute_script("window.open('https://web.autem.com.br/servicos/visualizar/', '_blank');")
+    browser.execute_script("window.open('https://web.autem.com.br/servicos/visualizar/', '_blank')")
     all_tabs = browser.window_handles
     autem_browser_tab = all_tabs[-1]
     browser.switch_to.window(autem_browser_tab)
@@ -129,7 +129,7 @@ def jobs_localiza_autem():
     wait_until(S('#datatable_servicos_info').exists)
     click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
     wait_until(S('#filtro_de').exists)
-    get_driver().execute_script("arguments[0].value = '';", S('#filtro_de').web_element)
+    get_driver().execute_script("arguments[0].value = ''", S('#filtro_de').web_element)
     write(timestamp_autem_filter, into=S('#filtro_de'))
     click(S('#btn_filtrar'))
     
@@ -140,34 +140,35 @@ def jobs_localiza_autem():
     if os.path.exists(autem_jobs_file):
         
         os.remove(autem_jobs_file)
-
+    #TODO fix button not being clicked
     click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
     
     #wait download to finish
     while os.path.exists(autem_jobs_file) == False:
         
-        time.sleep(1)
-
+        time.sleep(2)
+        click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
+        
     #Localiza
-    #access cleared jobs with the return value from jobs_pandas
+    
+    #TODO (#2 passo) get last 4 digits from specific CNPJ
+    
+    #(test) access cleared jobs with the return value from jobs_pandas
     browser.switch_to.window(localiza_browser_tab)
     clear_ss, not_clear_ss = jobs_pandas()
-    
     for job_cleared in clear_ss:
         
+        br_format_number = "{:.2f}".format(job_cleared['faturamento']).replace('.', '')
         click(job_cleared['ss'])
         wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
-        write(job_cleared['faturamento'], into=S('#NFList > tbody > tr > td:nth-child(6) > div > input'))
+        get_driver().execute_script(f"arguments[0].value = {br_format_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
         
-        break
-         
+        break  
 
     browser.quit()
     
 ##Pandas
 #Compare job lists
-#TODO job value not coming ou as supposed (2MJKTA/30 as example: real value: 290,0, exiting: 29,00)
-    #change to brazilian decimal treatment
 def jobs_pandas():
     
     #set up job lists dataframes
@@ -181,13 +182,13 @@ def jobs_pandas():
     #rename df_autem columns to match df_localiza
     df_autem = df_autem.rename(columns= {'Protocolo': 'ss', 'Valor (R$)': 'faturamento', 'Data e Hora Finalizado': 'conclusao', 'CNPJ': 'cnpj_fornecedor', 'Placa': 'placa'})
 
-    #make the values from df_localiza 'faturamento' column to match df_autem
+    #format df_localiza 'faturamento' column
     df_localiza['faturamento'] = (df_localiza['faturamento']
                 .str.replace('R\$', '', regex=True)
-                .str.replace('.', '', regex=False) 
+                .str.replace('.', '', regex=False)
                 .str.replace(',', '.', regex=False)
                 )
-
+    
     #convert every non 'Conforme Contrato' text to float, in df_localiza 'faturamento' column
     for index_df_localiza_items, value_df_localiza_items in df_localiza['faturamento'].items():
         
@@ -216,7 +217,7 @@ def jobs_pandas():
     #dataframe comparing localiza and autem jobs lists
     merge_localiza_autem = pd.merge(df_localiza, df_autem, on='ss', how='left')
 
-    #Compare ss to value and save the results to two lists of dictionaries
+    #Compare ss to value and save the results to two lists of dictionaries. Clear and not clear to continue
     for index_merge in range(len(merge_localiza_autem)):
         
         if merge_localiza_autem['faturamento_x'][index_merge] == merge_localiza_autem['faturamento_y'][index_merge]:
@@ -237,8 +238,7 @@ def jobs_pandas():
             }
             
             not_clear_ss.append(not_clear_ss_dict)
-            
-    print(clear_ss[0]['faturamento'])
+    print(clear_ss)        
     return clear_ss, not_clear_ss
 
 jobs_localiza_autem()
