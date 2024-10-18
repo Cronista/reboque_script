@@ -153,6 +153,7 @@ def jobs_localiza_autem():
     
     #TODO (#2 passo) get last 4 digits from specific CNPJ
     
+    #(#3 passo)
     #(test) access cleared jobs with the return value from jobs_pandas
     browser.switch_to.window(localiza_browser_tab)
     clear_ss, not_clear_ss = jobs_pandas()
