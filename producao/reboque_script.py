@@ -220,7 +220,7 @@ def jobs_pandas():
 
     #Compare ss to value and save the results to two lists of dictionaries. Clear and not clear to continue
     for index_merge in range(len(merge_localiza_autem)):
-        
+        #TODO "...if the value is lower, it will be marked positive. If the value is equal or greater, it will be marked negative."
         if merge_localiza_autem['faturamento_x'][index_merge] == merge_localiza_autem['faturamento_y'][index_merge]:
             
             clear_ss_dict = {
