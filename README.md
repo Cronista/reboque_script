@@ -17,6 +17,8 @@ This step is to be done by scraping Localiza job dashboard into a dictionary or 
 
 If the job is marked positive in this step, it will be skipped and analyzed manually.
 
+The rule will be: if the value is lower, it will be marked positive. If the value is equal or greater, it will be marked negative. Another rule is, within autem's dashboard the column "&nbsp;" must be observed. If it is red, do not proceed.
+
 #2 – Extract the specific Localiza company ID (CNPJ) from an e-mail PDF attachment.
 
 Besides the Localiza data table, each job is also consolidated with an e-mail that contains information about the job, including price and identification.
