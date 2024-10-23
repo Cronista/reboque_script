@@ -140,7 +140,7 @@ def jobs_localiza_autem():
     if os.path.exists(autem_jobs_file):
         
         os.remove(autem_jobs_file)
-    #TODO fix button not being clicked
+
     click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
     
     #wait download to finish
@@ -220,26 +220,47 @@ def jobs_pandas():
 
     #Compare ss to value and save the results to two lists of dictionaries. Clear and not clear to continue
     for index_merge in range(len(merge_localiza_autem)):
-        #TODO "...if the value is lower, it will be marked positive. If the value is equal or greater, it will be marked negative."
-        if merge_localiza_autem['faturamento_x'][index_merge] == merge_localiza_autem['faturamento_y'][index_merge]:
-            
-            clear_ss_dict = {
+    
+        try:
+            if merge_localiza_autem['faturamento_x'][index_merge] >= merge_localiza_autem['faturamento_y'][index_merge]:
                 
-                'ss': merge_localiza_autem['ss'][index_merge],
-                'faturamento': merge_localiza_autem['faturamento_x'][index_merge],
-            }
+                clear_ss_dict = {
+                    
+                    'ss': merge_localiza_autem['ss'][index_merge],
+                    'faturamento': merge_localiza_autem['faturamento_x'][index_merge],
+                }
+                
+                clear_ss.append(clear_ss_dict)
+            else:
             
-            clear_ss.append(clear_ss_dict)
-        else:
+                not_clear_ss_dict = {
+                    
+                    'ss': merge_localiza_autem['ss'][index_merge],
+                    'faturamento': merge_localiza_autem['faturamento_x'][index_merge]
+                }
+                
+                not_clear_ss.append(not_clear_ss_dict)
+                
+        except ValueError:
             
-            not_clear_ss_dict = {
+             not_clear_ss_dict = {
                 
                 'ss': merge_localiza_autem['ss'][index_merge],
                 'faturamento': merge_localiza_autem['faturamento_x'][index_merge]
-            }
+             }
+             
+             not_clear_ss.append(not_clear_ss_dict)
+             
+        except TypeError:
             
-            not_clear_ss.append(not_clear_ss_dict)
-    print(clear_ss)        
+             not_clear_ss_dict = {
+                
+                'ss': merge_localiza_autem['ss'][index_merge],
+                'faturamento': merge_localiza_autem['faturamento_x'][index_merge]
+             }
+             
+             not_clear_ss.append(not_clear_ss_dict)
+                   
     return clear_ss, not_clear_ss
 
 jobs_localiza_autem()
