@@ -159,6 +159,7 @@ def jobs_localiza_autem():
     clear_ss, not_clear_ss = jobs_pandas()
     for job_cleared in clear_ss:
         
+        #convert and format the SS's float value to string so Localiza can read it properly  
         br_format_number = "{:.2f}".format(job_cleared['faturamento']).replace('.', '')
         click(job_cleared['ss'])
         wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
