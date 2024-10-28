@@ -152,10 +152,8 @@ def jobs_localiza_autem():
         
     #Localiza
     
-    #TODO (#2 passo) get last 4 digits from specific CNPJ
-    
     #initialize Gmail
-    gmail = Gmail()
+    gmail = Gmail(client_secret_file='producao\google_api\client_secret.json', creds_file= 'producao\google_api\gmail_token.json')
     
     #(#3 passo)
     #access cleared jobs with the return value from jobs_pandas
@@ -170,9 +168,9 @@ def jobs_localiza_autem():
         wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
         #input job monetary value into it's field
         get_driver().execute_script(f"arguments[0].value = {br_format_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
-        #access email and get the 4 last digits from specific CNPJ
+        #TODO (#2passo) access email and get the 4 last digits from specific CNPJ
         download_attachments(gmail, job_cleared['ss'])
-        get_4_cpnj()
+        # get_4_cpnj()
         
         break  
 
@@ -291,7 +289,7 @@ def download_attachments(gmail, ss: str) -> str:
     with open(file_path, "wb") as f:
         f.write(messages.attachment.data)
         
-def get_4_CNPJ():
+def get_4_cnpj():
     
     return
 
