@@ -22,3 +22,4 @@ TEST_JS_HELIUM/defillama_protocols20241007-211718_131.csv
 db.env
 /producao/jobs_csv
 /producao/etc
+/producao/google_api
