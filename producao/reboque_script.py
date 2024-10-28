@@ -6,6 +6,7 @@ import csv, os, time
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
+from simplegmail import Gmail
 
 
 #set time variables to name files and other functions
@@ -153,17 +154,25 @@ def jobs_localiza_autem():
     
     #TODO (#2 passo) get last 4 digits from specific CNPJ
     
+    #initialize Gmail
+    gmail = Gmail()
+    
     #(#3 passo)
-    #(test) access cleared jobs with the return value from jobs_pandas
+    #access cleared jobs with the return value from jobs_pandas
     browser.switch_to.window(localiza_browser_tab)
     clear_ss, not_clear_ss = jobs_pandas()
     for job_cleared in clear_ss:
         
-        #convert and format the SS's float value to string so Localiza can read it properly  
+        #convert and format the SS's float monetary value to string so Localiza can read it properly
         br_format_number = "{:.2f}".format(job_cleared['faturamento']).replace('.', '')
+        #open job painel
         click(job_cleared['ss'])
         wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
+        #input job monetary value into it's field
         get_driver().execute_script(f"arguments[0].value = {br_format_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
+        #access email and get the 4 last digits from specific CNPJ
+        download_attachments(gmail, job_cleared['ss'])
+        get_4_cpnj()
         
         break  
 
@@ -263,5 +272,28 @@ def jobs_pandas():
              not_clear_ss.append(not_clear_ss_dict)
                    
     return clear_ss, not_clear_ss
+
+##Google API
+def download_attachments(gmail, ss: str) -> str:
+    
+    #define the query to search for emails with a specific subject and attachments
+    query = f'subject:"Localiza Gestão de Frotas 24 Horas - SS: {ss}" has:attachment'
+    
+    #search for query
+    messages = gmail.get_messages(query=query)
+    
+    #treat not finding messages
+    if not messages:
+        print("Nenhum e-mail encontrado")
+        return 'error_e-mail_not_found'
+    
+    file_path = os.path.join("producao\jobs_csv\ss_pdf", messages.attachment.filename)
+    with open(file_path, "wb") as f:
+        f.write(messages.attachment.data)
+        
+def get_4_CNPJ():
+    
+    return
+
 
 jobs_localiza_autem()
