@@ -53,6 +53,7 @@ def jobs_localiza_autem():
     #wait page to load
     wait_until(S('#txt-login-new').exists)
 
+    #TODO 2-step verification
     #define login field's CSS elements and input credentials
     login_user = S('#txt-login-new')
     login_pass = S('#txt-senha')
@@ -62,6 +63,12 @@ def jobs_localiza_autem():
 
     #wait until the jobs table is loaded
     wait_until(S('tbody').exists)
+    
+    #treat satisfaction survey
+    # time.sleep(2)
+    if ('Pesquisa de satisfação').exists == True:
+        
+        click(('Não'))
 
     #create a soup element to more easily manipulate the loaded page's HTML elements, compared to pure Helium
     soup = BeautifulSoup(browser.page_source, 'html.parser')
@@ -96,7 +103,7 @@ def jobs_localiza_autem():
         
     #save to csv file
     headers = ['ss', 'placa', 'conclusao', 'cnpj_fornecedor', 'faturamento', 'notas_anexadas', 'forma_de_pagamento']
-               #"producao\jobs_csv\localiza_{timestamp}.csv"
+               
     with open(f"producao\jobs_csv\localiza_.csv", "w", newline="", encoding="utf-8") as file:
         
         writer = csv.DictWriter(file, fieldnames=headers)
@@ -136,6 +143,7 @@ def jobs_localiza_autem():
     
     #wait until the export button is loaded, delete current file in the directory and click the download (export) button
     #this is done so the file is not renamed to "...(1)". The files will always be copied-over updated.
+    #TODO multiple copies are being made: (1), (2), etc
     wait_until(S('#datatable_servicos > tbody').exists)
      
     if os.path.exists(autem_jobs_file):
@@ -288,7 +296,7 @@ def download_attachments(gmail, ss: str) -> str:
     file_path = os.path.join("producao\jobs_csv\ss_pdf", messages.attachment.filename)
     with open(file_path, "wb") as f:
         f.write(messages.attachment.data)
-        
+#TODO        
 def get_4_cnpj():
     
     return
