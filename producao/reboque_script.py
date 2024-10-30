@@ -66,9 +66,10 @@ def jobs_localiza_autem():
     
     #treat satisfaction survey
     # time.sleep(2)
-    if ('Pesquisa de satisfação').exists == True:
-        
-        click(('Não'))
+    click(('Não'))
+    
+    #wait until the jobs table is loaded
+    wait_until(S('tbody').exists)
 
     #create a soup element to more easily manipulate the loaded page's HTML elements, compared to pure Helium
     soup = BeautifulSoup(browser.page_source, 'html.parser')
@@ -150,14 +151,14 @@ def jobs_localiza_autem():
         
         os.remove(autem_jobs_file)
 
-    click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
+    # click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
     
     #wait download to finish
     while os.path.exists(autem_jobs_file) == False:
         
-        time.sleep(2)
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
-        
+        time.sleep(3)
+         
     #Localiza
     
     #initialize Gmail
@@ -166,13 +167,17 @@ def jobs_localiza_autem():
     #(#3 passo)
     #access cleared jobs with the return value from jobs_pandas
     browser.switch_to.window(localiza_browser_tab)
+    #wait until the jobs table is loaded
+    wait_until(S('tbody').exists)
+    
     clear_ss, not_clear_ss = jobs_pandas()
     for job_cleared in clear_ss:
         
         #convert and format the SS's float monetary value to string so Localiza can read it properly
         br_format_number = "{:.2f}".format(job_cleared['faturamento']).replace('.', '')
         #open job painel
-        click(job_cleared['ss'])
+        # click(job_cleared['ss'])
+        click(S(f'//tr[@data-id-ref="{job_cleared["ss"]}"]'))
         wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
         #input job monetary value into it's field
         get_driver().execute_script(f"arguments[0].value = {br_format_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
@@ -293,9 +298,14 @@ def download_attachments(gmail, ss: str) -> str:
         print("Nenhum e-mail encontrado")
         return 'error_e-mail_not_found'
     
-    file_path = os.path.join("producao\jobs_csv\ss_pdf", messages.attachment.filename)
-    with open(file_path, "wb") as f:
-        f.write(messages.attachment.data)
+    #locate and save the pdf to the proper location
+    message = messages[0]
+    attachment = message.attachments[0]
+    # file_path = os.path.join("producao\jobs_csv\ss_pdf", attachment.filename)
+    default_path = attachment.save(overwrite=True)
+    custom_file_path = os.path.join("producao\jobs_csv\ss_pdf", attachment.filename)
+    os.replace(default_path, custom_file_path)
+        
 #TODO        
 def get_4_cnpj():
     
