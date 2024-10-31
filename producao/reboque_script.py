@@ -302,7 +302,10 @@ def download_attachments(gmail, ss: str) -> str:
     message = messages[0]
     attachment = message.attachments[0]
     # file_path = os.path.join("producao\jobs_csv\ss_pdf", attachment.filename)
-    default_path = attachment.save(overwrite=True)
+    attachment.save(overwrite=True)
+    cwd = os.getcwd
+    print(cwd)
+    default_path = attachment.filename
     custom_file_path = os.path.join("producao\jobs_csv\ss_pdf", attachment.filename)
     os.replace(default_path, custom_file_path)
         
