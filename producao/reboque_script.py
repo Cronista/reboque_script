@@ -2,7 +2,7 @@ from helium import *
 from selenium import webdriver
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-import csv, os, time
+import csv, os, time, fitz
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -33,17 +33,33 @@ def jobs_localiza_autem():
     
     #Localiza
     #initiate browser
-    options = webdriver.ChromeOptions()
-    prefs = {
+    # options = webdriver.ChromeOptions()
+    # prefs = {
         
-        'download.default_directory': jobs_file_path,
-        'download.prompt_for_download': False,
-        'download.directory_upgrade': True, 
-        'safebrowsing.enabled': True
+    #     'download.default_directory': jobs_file_path,
+    #     'download.prompt_for_download': False,
+    #     'download.directory_upgrade': True, 
+    #     'safebrowsing.enabled': True
              
-             } 
-    options.add_experimental_option('prefs', prefs)
-    browser = start_chrome("https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio", headless=False, options=options)
+    #          } 
+    # options.add_experimental_option('prefs', prefs)
+    # browser = start_chrome("https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio", headless=False, options=options)
+    
+    options = webdriver.ChromeOptions()
+    options.add_experimental_option('prefs', {
+    'download.default_directory': jobs_file_path,
+    'download.prompt_for_download': False,
+    'download.directory_upgrade': True,
+    'safebrowsing.enabled': True
+    })
+    options.add_argument("--remote-debugging-port=9222")  # Connect to the opened Chrome instance
+
+    # Connect to the existing Chrome instance without opening a new one
+    browser = webdriver.Chrome(options=options)
+
+    # Now, you can use Helium commands with this driver
+    set_driver(browser)
+    go_to("https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio")
     
     #TODO treat page not loading
     
@@ -66,7 +82,13 @@ def jobs_localiza_autem():
     
     #treat satisfaction survey
     # time.sleep(2)
-    click(('Não'))
+    try:
+        
+        click(('Não'))
+        
+    except LookupError:
+        
+        None 
     
     #wait until the jobs table is loaded
     wait_until(S('tbody').exists)
@@ -182,8 +204,9 @@ def jobs_localiza_autem():
         #input job monetary value into it's field
         get_driver().execute_script(f"arguments[0].value = {br_format_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
         #TODO (#2passo) access email and get the 4 last digits from specific CNPJ
-        download_attachments(gmail, job_cleared['ss'])
-        # get_4_cpnj()
+        ss_filename = download_attachments(gmail, job_cleared['ss'])
+        clear_cnpj = get_4_cnpj(job_cleared['ss'], ss_filename)
+        print(clear_cnpj)
         
         break  
 
@@ -303,16 +326,43 @@ def download_attachments(gmail, ss: str) -> str:
     attachment = message.attachments[0]
     # file_path = os.path.join("producao\jobs_csv\ss_pdf", attachment.filename)
     attachment.save(overwrite=True)
-    cwd = os.getcwd
-    print(cwd)
     default_path = attachment.filename
     custom_file_path = os.path.join("producao\jobs_csv\ss_pdf", attachment.filename)
     os.replace(default_path, custom_file_path)
-        
-#TODO        
-def get_4_cnpj():
     
-    return
+    return attachment.filename
+        
+#TODO   
+#extract the last four digits from the specific CNPJ   
+def get_4_cnpj(ss: str, filename) -> str:
+    
+    cnpj_pdf = fitz.open(f"producao\jobs_csv\ss_pdf\{filename}")
+    
+    for page_num, page in enumerate(cnpj_pdf):
+        
+        #extract all the text from the page
+        text = page.get_text('text')
+        
+        #string to search for in all of the ss's pdfs
+        search_string = 'S/A - CNPJ '
+        
+        #Find the single exact occurrence of the search string
+        start_idx = text.find(search_string)
+        
+        if start_idx != -1:  # Found the search string
+            
+            #calculate the end index for the next 14 characters
+            end_idx = start_idx + len(search_string) + 14
+            snippet = text[start_idx + len(search_string):end_idx]
+
+            #get only the last four characters of the 14-character snippet
+            four_cnpj = snippet[-4:]
+            
+            break
+        
+    cnpj_pdf.close()
+    return four_cnpj
+
 
 
 jobs_localiza_autem()
