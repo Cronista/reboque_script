@@ -1,5 +1,6 @@
 from helium import *
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import csv, os, time, fitz
@@ -12,6 +13,7 @@ from simplegmail import Gmail
 #set time variables to name files and other functions
 timestamp = time.strftime('%Y%m%d-%H%M%S')
 timestamp_autem_filter = (datetime.now() - timedelta(days=10)).strftime('%d/%m/%Y %H:%M')
+timestamp_today = (datetime.now().strftime('%d/%m/%Y'))
 
 #path to deploy dotenv
 env_path = ('producao\db.env')
@@ -22,6 +24,10 @@ load_dotenv(env_path)
 login_user_localiza = os.environ['LOGIN_USER_LOCALIZA']; login_pass_localiza = os.environ['LOGIN_PASS_LOCALIZA']
 #set up credentials for Autem
 login_user_autem = os.environ['LOGIN_USER_AUTEM']; login_pass_autem = os.environ['LOGIN_PASS_AUTEM']; login_code_autem = os.environ['LOGIN_CODE_AUTEM']
+#set up creds. for user chrome user data
+user_data_dir = os.environ['CHROME_USER_DATA']
+#set up secured constants
+reboque_cnpj = os.environ['REBOQUE_CNPJ']
 
 ##Localiza, Autem
 #get jobs from localiza and autem
@@ -33,65 +39,55 @@ def jobs_localiza_autem():
     
     #Localiza
     #initiate browser
-    # options = webdriver.ChromeOptions()
-    # prefs = {
-        
-    #     'download.default_directory': jobs_file_path,
-    #     'download.prompt_for_download': False,
-    #     'download.directory_upgrade': True, 
-    #     'safebrowsing.enabled': True
-             
-    #          } 
-    # options.add_experimental_option('prefs', prefs)
-    # browser = start_chrome("https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio", headless=False, options=options)
-    
     options = webdriver.ChromeOptions()
-    options.add_experimental_option('prefs', {
-    'download.default_directory': jobs_file_path,
-    'download.prompt_for_download': False,
-    'download.directory_upgrade': True,
-    'safebrowsing.enabled': True
-    })
-    options.add_argument("--remote-debugging-port=9222")  # Connect to the opened Chrome instance
-
-    # Connect to the existing Chrome instance without opening a new one
-    browser = webdriver.Chrome(options=options)
-
-    # Now, you can use Helium commands with this driver
-    set_driver(browser)
-    go_to("https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio")
+    prefs = {
+        
+        'download.default_directory': jobs_file_path,
+        'download.prompt_for_download': False,
+        'download.directory_upgrade': True, 
+        'safebrowsing.enabled': True
+             
+             } 
+    options.add_experimental_option('prefs', prefs)
+    options.add_argument(f"--user-data-dir={user_data_dir}")
+    browser = start_chrome("https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio", headless=False, options=options)
     
     #TODO treat page not loading
     
     #tabs management 
     localiza_browser_tab = browser.current_window_handle
 
-    #wait page to load
-    wait_until(S('#txt-login-new').exists)
-
-    #TODO 2-step verification
-    #define login field's CSS elements and input credentials
-    login_user = S('#txt-login-new')
-    login_pass = S('#txt-senha')
-    write(login_user_localiza, into=login_user)
-    write(login_pass_localiza, into=login_pass)
-    click('Acessar Portal Localiza')
-
-    #wait until the jobs table is loaded
-    wait_until(S('tbody').exists)
+    ##wait page to load
+    # wait_until(S('#txt-login-new').exists)
     
-    #treat satisfaction survey
-    # time.sleep(2)
+    # #define login field's CSS elements and input credentials
+    # login_user = S('#txt-login-new')
+    # login_pass = S('#txt-senha')
+    # write(login_user_localiza, into=login_user)
+    # write(login_pass_localiza, into=login_pass)
+    # click('Acessar Portal Localiza')
+
+    # #wait until the jobs table is loaded
+    # wait_until(S('tbody').exists)
+    
+    # #treat satisfaction survey
+    # try:
+        
+    #     click(('Não'))
+        
+    # except LookupError:
+        
+    #     None 
+    
+    #wait until the jobs table is loaded
     try:
+        wait_until(S('tbody').exists)
         
-        click(('Não'))
+    except TimeoutException:
         
-    except LookupError:
+        print('Página não carrega.')
         
-        None 
-    
-    #wait until the jobs table is loaded
-    wait_until(S('tbody').exists)
+        raise SystemExit
 
     #create a soup element to more easily manipulate the loaded page's HTML elements, compared to pure Helium
     soup = BeautifulSoup(browser.page_source, 'html.parser')
@@ -140,14 +136,19 @@ def jobs_localiza_autem():
     autem_browser_tab = all_tabs[-1]
     browser.switch_to.window(autem_browser_tab)
     
-    #define login field's CSS elements and input credentials
-    login_code = S('#frm-codigo-cliente')
-    login_user = S('#frm-login')
-    login_pass = S('#frm-senha')
-    write(login_code_autem, into=login_code)
-    write(login_user_autem, into=login_user)
-    write(login_pass_autem, into=login_pass)
-    click('Acessar Sistema')
+    if S('#form-login').exists:
+        
+        #define login field's CSS elements and input credentials
+        login_code = S('#frm-codigo-cliente')
+        login_user = S('#frm-login')
+        login_pass = S('#frm-senha')
+        write(login_code_autem, into=login_code)
+        write(login_user_autem, into=login_user)
+        write(login_pass_autem, into=login_pass)
+        click('Acessar Sistema')
+    else:
+        
+        None
     
     #wait until the page is loaded and navigate to jobs dashboard
     wait_until(S('#mapa_relatorio').exists)
@@ -166,7 +167,6 @@ def jobs_localiza_autem():
     
     #wait until the export button is loaded, delete current file in the directory and click the download (export) button
     #this is done so the file is not renamed to "...(1)". The files will always be copied-over updated.
-    #TODO multiple copies are being made: (1), (2), etc
     wait_until(S('#datatable_servicos > tbody').exists)
      
     if os.path.exists(autem_jobs_file):
@@ -180,6 +180,10 @@ def jobs_localiza_autem():
         
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
         time.sleep(3)
+        
+    #NotaCarioca
+    #TODO
+    
          
     #Localiza
     
@@ -201,12 +205,26 @@ def jobs_localiza_autem():
         # click(job_cleared['ss'])
         click(S(f'//tr[@data-id-ref="{job_cleared["ss"]}"]'))
         wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
+        
         #input job monetary value into it's field
         get_driver().execute_script(f"arguments[0].value = {br_format_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
-        #TODO (#2passo) access email and get the 4 last digits from specific CNPJ
+        
+        #access email, get the 4 last digits from specific CNPJ and inputs it into the its field'
         ss_filename = download_attachments(gmail, job_cleared['ss'])
         clear_cnpj = get_4_cnpj(job_cleared['ss'], ss_filename)
-        print(clear_cnpj)
+        get_driver().execute_script(f"arguments[0].value = {clear_cnpj}", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
+        
+        #input reboque company cnpj into its field
+        get_driver().execute_script(f"arguments[0].value = {reboque_cnpj}", S('#cnpj-emissor').web_element)
+        
+        #input arbitrary number into its field
+        #TODO
+        
+        #input today date into its field
+        # get_driver().execute_script(f"arguments[0].value = {timestamp_today}", S('#NFList > tbody > tr > td:nth-child(3) > div > input').web_element)
+        write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
+        
+        #(#4 passo) get the invoice from NotaCarioca
         
         break  
 
