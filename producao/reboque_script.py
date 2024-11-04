@@ -33,6 +33,8 @@ reboque_cnpj = os.environ['REBOQUE_CNPJ']
 #get jobs from localiza and autem
 def jobs_localiza_autem():
     
+    #TODO arbitrary number user prompt
+    
     #set file paths
     jobs_file_path = os.path.join(os.getcwd(), 'producao', 'jobs_csv')
     autem_jobs_file = os.path.join(jobs_file_path, 'exportGrid_AutEM_xls.xlsx')
@@ -184,6 +186,11 @@ def jobs_localiza_autem():
     #NotaCarioca
     #TODO
     
+    #Autem: fill invoice number into autem
+    #TODO
+    
+    #Feed invoice to localiza
+    #TODO
          
     #Localiza
     
