@@ -33,7 +33,24 @@ reboque_cnpj = os.environ['REBOQUE_CNPJ']
 #get jobs from localiza and autem
 def jobs_localiza_autem():
     
-    #TODO arbitrary number user prompt
+    # #TODO invoice number user prompt
+    # invoice_number = -1
+    # while invoice_number < 0:
+        
+    #     try:
+            
+    #         os.system('cls')
+    #         print("Insira um número válido para a nota incial")
+    #         invoice_number = int(input())
+    #         os.system('cls')
+        
+    #     except (TypeError, ValueError):
+            
+    #         print("Número inválido.\nPressione Enter para tentar novamente.")
+    #         input()
+    #         invoice_number = -1
+
+        
     
     #set file paths
     jobs_file_path = os.path.join(os.getcwd(), 'producao', 'jobs_csv')
@@ -188,9 +205,13 @@ def jobs_localiza_autem():
     
     #Autem: fill invoice number into autem
     #TODO
+    #switch tabs
+    #locate field
+    #field value + '/' + invoice number
     
     #Feed invoice to localiza
     #TODO
+    
          
     #Localiza
     
@@ -207,14 +228,14 @@ def jobs_localiza_autem():
     for job_cleared in clear_ss:
         
         #convert and format the SS's float monetary value to string so Localiza can read it properly
-        br_format_number = "{:.2f}".format(job_cleared['faturamento']).replace('.', '')
+        ss_value_number = "{:.2f}".format(job_cleared['faturamento']).replace('.', '')
         #open job painel
         # click(job_cleared['ss'])
         click(S(f'//tr[@data-id-ref="{job_cleared["ss"]}"]'))
         wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
         
         #input job monetary value into it's field
-        get_driver().execute_script(f"arguments[0].value = {br_format_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
+        get_driver().execute_script(f"arguments[0].value = {ss_value_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
         
         #access email, get the 4 last digits from specific CNPJ and inputs it into the its field'
         ss_filename = download_attachments(gmail, job_cleared['ss'])
@@ -224,8 +245,10 @@ def jobs_localiza_autem():
         #input reboque company cnpj into its field
         get_driver().execute_script(f"arguments[0].value = {reboque_cnpj}", S('#cnpj-emissor').web_element)
         
-        #input arbitrary number into its field
-        #TODO
+        # #input invoice number into its field and iterate it
+        # #TODO
+        # write(invoice_number, into=S('#NFList > tbody > tr > td:nth-child(4) > div > input'))
+        # invoice_number += 1
         
         #input today date into its field
         # get_driver().execute_script(f"arguments[0].value = {timestamp_today}", S('#NFList > tbody > tr > td:nth-child(3) > div > input').web_element)
@@ -356,8 +379,7 @@ def download_attachments(gmail, ss: str) -> str:
     os.replace(default_path, custom_file_path)
     
     return attachment.filename
-        
-#TODO   
+          
 #extract the last four digits from the specific CNPJ   
 def get_4_cnpj(ss: str, filename) -> str:
     
