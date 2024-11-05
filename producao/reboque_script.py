@@ -155,23 +155,24 @@ def jobs_localiza_autem():
     autem_browser_tab = all_tabs[-1]
     browser.switch_to.window(autem_browser_tab)
     
-    if S('#form-login').exists:
+    #TODO check if login is required
+    # if S('#form-login').exists:
         
-        #define login field's CSS elements and input credentials
-        login_code = S('#frm-codigo-cliente')
-        login_user = S('#frm-login')
-        login_pass = S('#frm-senha')
-        write(login_code_autem, into=login_code)
-        write(login_user_autem, into=login_user)
-        write(login_pass_autem, into=login_pass)
-        click('Acessar Sistema')
-    else:
+    #     #define login field's CSS elements and input credentials
+    #     login_code = S('#frm-codigo-cliente')
+    #     login_user = S('#frm-login')
+    #     login_pass = S('#frm-senha')
+    #     write(login_code_autem, into=login_code)
+    #     write(login_user_autem, into=login_user)
+    #     write(login_pass_autem, into=login_pass)
+    #     click('Acessar Sistema')
+    # else:
         
-        None
+    #     None
     
-    #wait until the page is loaded and navigate to jobs dashboard
-    wait_until(S('#mapa_relatorio').exists)
-    go_to('https://web.autem.com.br/servicos/visualizar/')
+    # #wait until the page is loaded and navigate to jobs dashboard
+    # wait_until(S('#mapa_relatorio').exists)
+    # go_to('https://web.autem.com.br/servicos/visualizar/')
     
     #change table filter parameters to include more data (about 10 days)
     wait_until(S('#datatable_servicos > tbody').exists)
@@ -251,7 +252,6 @@ def jobs_localiza_autem():
         # invoice_number += 1
         
         #input today date into its field
-        # get_driver().execute_script(f"arguments[0].value = {timestamp_today}", S('#NFList > tbody > tr > td:nth-child(3) > div > input').web_element)
         write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
         
         #(#4 passo) get the invoice from NotaCarioca
