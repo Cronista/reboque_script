@@ -11,6 +11,9 @@ from simplegmail import Gmail
 
 
 #set time variables to name files and other functions
+
+print('Criando variáveis......')
+
 timestamp = time.strftime('%Y%m%d-%H%M%S')
 timestamp_autem_filter = (datetime.now() - timedelta(days=10)).strftime('%d/%m/%Y %H:%M')
 timestamp_today = (datetime.now().strftime('%d/%m/%Y'))
@@ -33,22 +36,22 @@ reboque_cnpj = os.environ['REBOQUE_CNPJ']
 #get jobs from localiza and autem
 def jobs_localiza_autem():
     
-    # #TODO invoice number user prompt
-    # invoice_number = -1
-    # while invoice_number < 0:
+    #TODO invoice number user prompt
+    invoice_number = -1
+    while invoice_number < 0:
         
-    #     try:
+        try:
             
-    #         os.system('cls')
-    #         print("Insira um número válido para a nota incial")
-    #         invoice_number = int(input())
-    #         os.system('cls')
+            os.system('cls')
+            print('Insira um número válido para a nota incial')
+            invoice_number = int(input())
+            os.system('cls')
         
-    #     except (TypeError, ValueError):
+        except (TypeError, ValueError):
             
-    #         print("Número inválido.\nPressione Enter para tentar novamente.")
-    #         input()
-    #         invoice_number = -1
+            print('Número inválido.\nPressione Enter para tentar novamente.')
+            input()
+            invoice_number = -1
 
         
     
@@ -58,6 +61,9 @@ def jobs_localiza_autem():
     
     #Localiza
     #initiate browser
+    
+    print('Iniciando browser......')
+    
     options = webdriver.ChromeOptions()
     prefs = {
         
@@ -68,8 +74,13 @@ def jobs_localiza_autem():
              
              } 
     options.add_experimental_option('prefs', prefs)
-    options.add_argument(f"--user-data-dir={user_data_dir}")
-    browser = start_chrome("https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio", headless=False, options=options)
+    options.add_argument(f'--user-data-dir={user_data_dir}')
+    options.add_argument('headless')
+    options.add_argument('--disable-infobars')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--remote-debugging-port=9222')
+    browser = start_chrome('https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio', options=options)
     
     #TODO treat page not loading
     
@@ -82,6 +93,9 @@ def jobs_localiza_autem():
     # #define login field's CSS elements and input credentials
     # login_user = S('#txt-login-new')
     # login_pass = S('#txt-senha')
+    
+    #print('Logando no Localiza......')
+    
     # write(login_user_localiza, into=login_user)
     # write(login_pass_localiza, into=login_pass)
     # click('Acessar Portal Localiza')
@@ -108,6 +122,8 @@ def jobs_localiza_autem():
         
         raise SystemExit
 
+    print('Varrendo Localiza......')
+    
     #create a soup element to more easily manipulate the loaded page's HTML elements, compared to pure Helium
     soup = BeautifulSoup(browser.page_source, 'html.parser')
     job_table_localiza = soup.find('tbody')
@@ -156,23 +172,29 @@ def jobs_localiza_autem():
     browser.switch_to.window(autem_browser_tab)
     
     #TODO check if login is required
-    # if S('#form-login').exists:
+    try:
         
-    #     #define login field's CSS elements and input credentials
-    #     login_code = S('#frm-codigo-cliente')
-    #     login_user = S('#frm-login')
-    #     login_pass = S('#frm-senha')
-    #     write(login_code_autem, into=login_code)
-    #     write(login_user_autem, into=login_user)
-    #     write(login_pass_autem, into=login_pass)
-    #     click('Acessar Sistema')
-    # else:
-        
-    #     None
+        wait_until(S('#form-login').exists)
+        print('Logando no Autem......')
     
-    # #wait until the page is loaded and navigate to jobs dashboard
+        #define login field's CSS elements and input credentials
+        login_code = S('#frm-codigo-cliente')
+        login_user = S('#frm-login')
+        login_pass = S('#frm-senha')
+        write(login_code_autem, into=login_code)
+        write(login_user_autem, into=login_user)
+        write(login_pass_autem, into=login_pass)
+        click('Acessar Sistema')
+        
+    except TimeoutException:
+        
+        None    
+    
+    
+    print('Varrendo Autem......')
+    #wait until the page is loaded and navigate to jobs dashboard
     # wait_until(S('#mapa_relatorio').exists)
-    # go_to('https://web.autem.com.br/servicos/visualizar/')
+    go_to('https://web.autem.com.br/servicos/visualizar/')
     
     #change table filter parameters to include more data (about 10 days)
     wait_until(S('#datatable_servicos > tbody').exists)
@@ -210,12 +232,8 @@ def jobs_localiza_autem():
     #locate field
     #field value + '/' + invoice number
     
-    #Feed invoice to localiza
-    #TODO
-    
          
     #Localiza
-    
     #initialize Gmail
     gmail = Gmail(client_secret_file='producao\google_api\client_secret.json', creds_file= 'producao\google_api\gmail_token.json')
     
@@ -225,8 +243,13 @@ def jobs_localiza_autem():
     #wait until the jobs table is loaded
     wait_until(S('tbody').exists)
     
+    print('Comparando serviços......')
+    
     clear_ss, not_clear_ss = jobs_pandas()
+    
     for job_cleared in clear_ss:
+        
+        print('Preenchendo dados do serviço no Localiza......')
         
         #convert and format the SS's float monetary value to string so Localiza can read it properly
         ss_value_number = "{:.2f}".format(job_cleared['faturamento']).replace('.', '')
@@ -239,6 +262,9 @@ def jobs_localiza_autem():
         get_driver().execute_script(f"arguments[0].value = {ss_value_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
         
         #access email, get the 4 last digits from specific CNPJ and inputs it into the its field'
+        
+        print('Localizando e-mail com a nota......')
+        
         ss_filename = download_attachments(gmail, job_cleared['ss'])
         clear_cnpj = get_4_cnpj(job_cleared['ss'], ss_filename)
         get_driver().execute_script(f"arguments[0].value = {clear_cnpj}", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
@@ -246,15 +272,18 @@ def jobs_localiza_autem():
         #input reboque company cnpj into its field
         get_driver().execute_script(f"arguments[0].value = {reboque_cnpj}", S('#cnpj-emissor').web_element)
         
-        # #input invoice number into its field and iterate it
-        # #TODO
-        # write(invoice_number, into=S('#NFList > tbody > tr > td:nth-child(4) > div > input'))
-        # invoice_number += 1
+        #input invoice number into its field and iterate it
+        write(invoice_number, into=S('#NFList > tbody > tr > td:nth-child(4) > div > input'))
+        invoice_number += 1
         
         #input today date into its field
         write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
         
-        #(#4 passo) get the invoice from NotaCarioca
+        #Feed invoice to localiza
+        #TODO
+        
+        #debug 
+        get_driver().save_screenshot("producao\jobs_csv\loca.png")
         
         break  
 
