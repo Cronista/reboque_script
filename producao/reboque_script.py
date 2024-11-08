@@ -42,7 +42,6 @@ def jobs_localiza_autem():
         
         try:
             
-            os.system('cls')
             print('Insira um número válido para a nota incial')
             invoice_number = int(input())
             os.system('cls')
@@ -53,8 +52,6 @@ def jobs_localiza_autem():
             input()
             invoice_number = -1
 
-        
-    
     #set file paths
     jobs_file_path = os.path.join(os.getcwd(), 'producao', 'jobs_csv')
     autem_jobs_file = os.path.join(jobs_file_path, 'exportGrid_AutEM_xls.xlsx')
@@ -73,6 +70,7 @@ def jobs_localiza_autem():
         'safebrowsing.enabled': True
              
              } 
+    
     options.add_experimental_option('prefs', prefs)
     options.add_argument(f'--user-data-dir={user_data_dir}')
     options.add_argument('headless')
@@ -165,13 +163,13 @@ def jobs_localiza_autem():
         writer.writerows(job_list_localiza)
     
     #Autem
+    #TODO get last 4 cnpj into autem
     #switch to another tab and access autem.com
     browser.execute_script("window.open('https://web.autem.com.br/servicos/visualizar/', '_blank')")
     all_tabs = browser.window_handles
     autem_browser_tab = all_tabs[-1]
     browser.switch_to.window(autem_browser_tab)
     
-    #TODO check if login is required
     try:
         
         wait_until(S('#form-login').exists)
@@ -224,7 +222,24 @@ def jobs_localiza_autem():
         time.sleep(3)
         
     #NotaCarioca
-    #TODO
+    #TODO cnpj ending in 6663: extra step -> click on first
+    #access nota carioca and download the specific job invoice
+    
+    print('Logando no Nota Carioca......')
+    
+    #create and switch tabs
+    browser.execute_script("window.open('https://notacarioca.rio.gov.br/contribuinte/nota.aspx', '_blank')")
+    all_tabs = browser.window_handles
+    nota_browser_tab = all_tabs[-1]
+    browser.switch_to.window(nota_browser_tab)
+    
+    #get the full specific cnpj
+    # _, full_cnpj = get_4_cnpj()
+    write("02286479000108", into=S('#ctl00_cphCabMenu_tbCPFCNPJTomador'))    
+    #debug 
+    get_driver().save_screenshot("producao\jobs_csv\loca.png")
+    
+    raise SystemExit()
     
     #Autem: fill invoice number into autem
     #TODO
@@ -283,7 +298,7 @@ def jobs_localiza_autem():
         #TODO
         
         #debug 
-        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        # get_driver().save_screenshot("producao\jobs_csv\loca.png")
         
         break  
 
@@ -437,8 +452,6 @@ def get_4_cnpj(ss: str, filename) -> str:
             break
         
     cnpj_pdf.close()
-    return four_cnpj
-
-
+    return four_cnpj, snippet
 
 jobs_localiza_autem()
