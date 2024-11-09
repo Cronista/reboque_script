@@ -36,7 +36,6 @@ reboque_cnpj = os.environ['REBOQUE_CNPJ']
 #get jobs from localiza and autem
 def jobs_localiza_autem():
     
-    #TODO invoice number user prompt
     invoice_number = -1
     while invoice_number < 0:
         
@@ -79,8 +78,6 @@ def jobs_localiza_autem():
     options.add_argument('--no-sandbox')
     options.add_argument('--remote-debugging-port=9222')
     browser = start_chrome('https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio', options=options)
-    
-    #TODO treat page not loading
     
     #tabs management 
     localiza_browser_tab = browser.current_window_handle
@@ -163,7 +160,6 @@ def jobs_localiza_autem():
         writer.writerows(job_list_localiza)
     
     #Autem
-    #TODO get last 4 cnpj into autem
     #switch to another tab and access autem.com
     browser.execute_script("window.open('https://web.autem.com.br/servicos/visualizar/', '_blank')")
     all_tabs = browser.window_handles
@@ -172,7 +168,7 @@ def jobs_localiza_autem():
     
     try:
         #debug
-        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        # get_driver().save_screenshot("producao\jobs_csv\loca.png")
         
         wait_until(S('#form-login').exists)
         print('Logando no Autem......')
@@ -222,28 +218,6 @@ def jobs_localiza_autem():
         
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
         time.sleep(3)
-        
-    #NotaCarioca
-    #TODO cnpj ending in 6663: extra step -> click on first
-    #access nota carioca and download the specific job invoice
-    
-    print('Logando no Nota Carioca......')
-    
-    #create and switch tabs
-    browser.execute_script("window.open('https://notacarioca.rio.gov.br/contribuinte/nota.aspx', '_blank')")
-    all_tabs = browser.window_handles
-    nota_browser_tab = all_tabs[-1]
-    browser.switch_to.window(nota_browser_tab)
-    
-    #get the full specific cnpj
-    # _, full_cnpj = get_4_cnpj()
-    #debug
-    get_driver().save_screenshot("producao\jobs_csv\loca.png")
-    write("02286479000108", into=S('#ctl00_cphCabMenu_tbCPFCNPJTomador'))    
-    #debug 
-    get_driver().save_screenshot("producao\jobs_csv\loca.png")
-    
-    raise SystemExit()
     
     #Autem: fill invoice number into autem
     #TODO
@@ -298,6 +272,9 @@ def jobs_localiza_autem():
         #input today date into its field
         write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
         
+        #get invoice from nota carioca
+        get_nota_carioca(browser, job_cleared['ss'], ss_filename)
+        
         #Feed invoice to localiza
         #TODO
         
@@ -307,6 +284,28 @@ def jobs_localiza_autem():
         break  
 
     browser.quit()
+    
+def get_nota_carioca(browser, job_cleared, ss_filename):
+            
+    #NotaCarioca
+    #TODO cnpj ending in 6663: extra step -> click on first
+    #access nota carioca and download the specific job invoice
+    
+    print('Logando no Nota Carioca......')
+    
+    #create and switch tabs
+    browser.execute_script("window.open('https://notacarioca.rio.gov.br/contribuinte/nota.aspx', '_blank')")
+    all_tabs = browser.window_handles
+    nota_browser_tab = all_tabs[-1]
+    browser.switch_to.window(nota_browser_tab)
+    
+    #get the full specific cnpj
+    _, full_cnpj = get_4_cnpj(job_cleared, ss_filename)
+    
+    #write the full cnpj into nota
+    write(full_cnpj, into=S('#ctl00_cphCabMenu_tbCPFCNPJTomador'))
+    
+    aqui
     
 ##Pandas
 #Compare job lists
