@@ -166,31 +166,31 @@ def jobs_localiza_autem():
     autem_browser_tab = all_tabs[-1]
     browser.switch_to.window(autem_browser_tab)
     
-    try:
-        #debug
-        # get_driver().save_screenshot("producao\jobs_csv\loca.png")
+    # try:
+    #     #debug
+    #     # get_driver().save_screenshot("producao\jobs_csv\loca.png")
         
-        wait_until(S('#form-login').exists)
-        print('Logando no Autem......')
+    #     wait_until(S('#form-login').exists)
+    #     print('Logando no Autem......')
     
-        #define login field's CSS elements and input credentials
-        login_code = S('#frm-codigo-cliente')
-        login_user = S('#frm-login')
-        login_pass = S('#frm-senha')
-        write(login_code_autem, into=login_code)
-        write(login_user_autem, into=login_user)
-        write(login_pass_autem, into=login_pass)
-        click('Acessar Sistema')
+    #     #define login field's CSS elements and input credentials
+    #     login_code = S('#frm-codigo-cliente')
+    #     login_user = S('#frm-login')
+    #     login_pass = S('#frm-senha')
+    #     write(login_code_autem, into=login_code)
+    #     write(login_user_autem, into=login_user)
+    #     write(login_pass_autem, into=login_pass)
+    #     click('Acessar Sistema')
         
-    except TimeoutException:
+    # except TimeoutException:
         
-        None    
+    #     None    
     
     
     print('Varrendo Autem......')
     #wait until the page is loaded and navigate to jobs dashboard
     # wait_until(S('#mapa_relatorio').exists)
-    go_to('https://web.autem.com.br/servicos/visualizar/')
+    # go_to('https://web.autem.com.br/servicos/visualizar/')
     
     #change table filter parameters to include more data (about 10 days)
     wait_until(S('#datatable_servicos > tbody').exists)
@@ -242,7 +242,7 @@ def jobs_localiza_autem():
     
     for job_cleared in clear_ss:
         
-        print('Preenchendo dados do serviço no Localiza......')
+        print(f'Preenchendo dados do serviço no Localiza ({job_cleared['ss']})......')
         
         #convert and format the SS's float monetary value to string so Localiza can read it properly
         ss_value_number = "{:.2f}".format(job_cleared['faturamento']).replace('.', '')
@@ -256,10 +256,10 @@ def jobs_localiza_autem():
         
         #access email, get the 4 last digits from specific CNPJ and inputs it into the its field'
         
-        print('Localizando e-mail com a nota......')
+        print(f'Localizando e-mail com a nota ({job_cleared['ss']})......')
         
         ss_filename = download_attachments(gmail, job_cleared['ss'])
-        clear_cnpj = get_4_cnpj(job_cleared['ss'], ss_filename)
+        clear_cnpj = get_4_cnpj(ss_filename)
         get_driver().execute_script(f"arguments[0].value = {clear_cnpj}", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
         
         #input reboque company cnpj into its field
@@ -273,7 +273,7 @@ def jobs_localiza_autem():
         write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
         
         #get invoice from nota carioca
-        get_nota_carioca(browser, job_cleared['ss'], ss_filename)
+        get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number)
         
         #Feed invoice to localiza
         #TODO
@@ -285,13 +285,13 @@ def jobs_localiza_autem():
 
     browser.quit()
     
-def get_nota_carioca(browser, job_cleared, ss_filename):
+def get_nota_carioca(browser, ss, ss_filename, ss_value):
             
     #NotaCarioca
     #TODO cnpj ending in 6663: extra step -> click on first
     #access nota carioca and download the specific job invoice
     
-    print('Logando no Nota Carioca......')
+    print(f'Logando no Nota Carioca ({ss})......')
     
     #create and switch tabs
     browser.execute_script("window.open('https://notacarioca.rio.gov.br/contribuinte/nota.aspx', '_blank')")
@@ -300,12 +300,30 @@ def get_nota_carioca(browser, job_cleared, ss_filename):
     browser.switch_to.window(nota_browser_tab)
     
     #get the full specific cnpj
-    _, full_cnpj = get_4_cnpj(job_cleared, ss_filename)
+    _, full_cnpj = get_4_cnpj(ss_filename)
     
-    #write the full cnpj into nota
+    #write the full cnpj into nota and proceed to the next page
+    #debug
+    get_driver().save_screenshot("producao\jobs_csv\loca.png")
+    wait_until(S('#ctl00_cphCabMenu_tbCPFCNPJTomador').exists)
+    
     write(full_cnpj, into=S('#ctl00_cphCabMenu_tbCPFCNPJTomador'))
+    click('AVANÇAR >>')
     
-    aqui
+    #fill in required info into fields
+    wait_until(S('#ctl00_cphCabMenu_tbDiscriminacao').exists)
+    
+    write(ss, into=S('#ctl00_cphCabMenu_tbDiscriminacao'))
+    write(ss_value, into=S('#ctl00_cphCabMenu_tbValor'))
+    click(S('#ctl00_cphCabMenu_rblISSRetido_1'))
+    #debug
+    get_driver().save_screenshot("producao\jobs_csv\loca.png")
+    click('EMITIR >>')
+    
+    #download invoice file
+    # default_path = attachment.filename
+    # custom_file_path = os.path.join("producao\jobs_csv\ss_pdf", attachment.filename)
+    # os.replace(default_path, custom_file_path)
     
 ##Pandas
 #Compare job lists
@@ -428,7 +446,7 @@ def download_attachments(gmail, ss: str) -> str:
     return attachment.filename
           
 #extract the last four digits from the specific CNPJ   
-def get_4_cnpj(ss: str, filename) -> str:
+def get_4_cnpj(filename) -> str:
     
     cnpj_pdf = fitz.open(f"producao\jobs_csv\ss_pdf\{filename}")
     
