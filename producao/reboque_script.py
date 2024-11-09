@@ -171,6 +171,8 @@ def jobs_localiza_autem():
     browser.switch_to.window(autem_browser_tab)
     
     try:
+        #debug
+        get_driver().save_screenshot("producao\jobs_csv\loca.png")
         
         wait_until(S('#form-login').exists)
         print('Logando no Autem......')
@@ -235,6 +237,8 @@ def jobs_localiza_autem():
     
     #get the full specific cnpj
     # _, full_cnpj = get_4_cnpj()
+    #debug
+    get_driver().save_screenshot("producao\jobs_csv\loca.png")
     write("02286479000108", into=S('#ctl00_cphCabMenu_tbCPFCNPJTomador'))    
     #debug 
     get_driver().save_screenshot("producao\jobs_csv\loca.png")
