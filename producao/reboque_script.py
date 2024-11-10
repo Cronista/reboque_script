@@ -242,7 +242,8 @@ def jobs_localiza_autem():
     
     for job_cleared in clear_ss:
         
-        print(f'Preenchendo dados do serviço no Localiza ({job_cleared['ss']})......')
+        ss = job_cleared["ss"]
+        print(f'Preenchendo dados do serviço no Localiza ({ss})......')
         
         #convert and format the SS's float monetary value to string so Localiza can read it properly
         ss_value_number = "{:.2f}".format(job_cleared['faturamento']).replace('.', '')
@@ -256,7 +257,7 @@ def jobs_localiza_autem():
         
         #access email, get the 4 last digits from specific CNPJ and inputs it into the its field'
         
-        print(f'Localizando e-mail com a nota ({job_cleared['ss']})......')
+        print(f'Localizando e-mail com a nota ({ss})......')
         
         ss_filename = download_attachments(gmail, job_cleared['ss'])
         clear_cnpj = get_4_cnpj(ss_filename)
