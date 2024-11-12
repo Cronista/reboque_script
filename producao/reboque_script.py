@@ -3,7 +3,7 @@ from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-import csv, os, time, fitz
+import csv, os, time, fitz, glob
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
@@ -217,14 +217,7 @@ def jobs_localiza_autem():
     while os.path.exists(autem_jobs_file) == False:
         
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
-        time.sleep(3)
-    
-    #Autem: fill invoice number into autem
-    #TODO
-    #switch tabs
-    #locate field
-    #field value + '/' + invoice number
-    
+        time.sleep(3) 
          
     #Localiza
     #initialize Gmail
@@ -242,11 +235,25 @@ def jobs_localiza_autem():
     
     for job_cleared in clear_ss:
         
-        ss = job_cleared["ss"]
-        print(f'Preenchendo dados do serviço no Localiza ({ss})......')
+        print(f'Preenchendo dados do serviço no Autem ({ss})......')
         
+        #Autem: fill invoice number into autem
+        #TODO
+        browser.switch_to.window(autem_browser_tab)
+        click(job_cleared['ss'])
+        wait_until(S('#servico_editar_assistencia').exists)
+        ss_autem_number = TextField(S('#servico_editar_assistencia')).value
+        write(ss_autem_number + '/' + invoice_number)
+        
+        #debug
+        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+    
+        ss = job_cleared['ss']
+        
+        print(f'Preenchendo dados do serviço no Localiza ({ss})......')
+        browser.switch_to.window(localiza_browser_tab)
         #convert and format the SS's float monetary value to string so Localiza can read it properly
-        ss_value_number = "{:.2f}".format(job_cleared['faturamento']).replace('.', '')
+        ss_value_number = '{:.2f}'.format(job_cleared['faturamento']).replace('.', '')
         #open job painel
         # click(job_cleared['ss'])
         click(S(f'//tr[@data-id-ref="{job_cleared["ss"]}"]'))
@@ -274,19 +281,28 @@ def jobs_localiza_autem():
         write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
         
         #get invoice from nota carioca
-        get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number)
+        invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path)
         
         #Feed invoice to localiza
         #TODO
+        attach_file(invoice_file, to='Anexar arquivo')
         
         #debug 
-        # get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        
+        #Save and complete the job
+        #TODO
+        click(S('#NFList > tbody > tr > td:nth-child(11) > i'))
+        
+        #Delete invoice
+        os.remove(invoice_file)
+
         
         break  
 
     browser.quit()
     
-def get_nota_carioca(browser, ss, ss_filename, ss_value):
+def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path):
             
     #NotaCarioca
     #TODO cnpj ending in 6663: extra step -> click on first
@@ -304,9 +320,11 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value):
     _, full_cnpj = get_4_cnpj(ss_filename)
     
     #write the full cnpj into nota and proceed to the next page
+    
     #debug
     get_driver().save_screenshot("producao\jobs_csv\loca.png")
     wait_until(S('#ctl00_cphCabMenu_tbCPFCNPJTomador').exists)
+    
     
     write(full_cnpj, into=S('#ctl00_cphCabMenu_tbCPFCNPJTomador'))
     click('AVANÇAR >>')
@@ -317,14 +335,34 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value):
     write(ss, into=S('#ctl00_cphCabMenu_tbDiscriminacao'))
     write(ss_value, into=S('#ctl00_cphCabMenu_tbValor'))
     click(S('#ctl00_cphCabMenu_rblISSRetido_1'))
+    
+    #Downloads invoice
+    click('EMITIR >>')
+    # press(ENTER)
+    
     #debug
     get_driver().save_screenshot("producao\jobs_csv\loca.png")
-    click('EMITIR >>')
     
-    #download invoice file
-    # default_path = attachment.filename
-    # custom_file_path = os.path.join("producao\jobs_csv\ss_pdf", attachment.filename)
-    # os.replace(default_path, custom_file_path)
+    Alert().accept()
+    wait_until(S('#ctl00_cphBase_img').exists)
+    click(S('#ctl00_cphBase_btGerarPDF'))
+    
+    #locate file based on its partial file name
+    invoice_file = glob.glob(f'{jobs_file_path}/**/*NFSe_*', recursive=True)
+    
+    #waits until the file is downloaded
+    while invoice_file == []:
+        
+        time.sleep(1)
+        
+    click(S('#ctl00_cphBase_btVoltar'))
+    
+    #manages file
+    default_path = os.path.join(jobs_file_path, invoice_file)
+    custom_invoice_file_path = os.path.join("producao\jobs_csv\ss_invoice", default_path)
+    os.replace(default_path, custom_invoice_file_path)
+    
+    return custom_invoice_file_path
     
 ##Pandas
 #Compare job lists
