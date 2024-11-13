@@ -233,6 +233,8 @@ def jobs_localiza_autem():
     
     clear_ss, not_clear_ss = jobs_pandas()
     
+    ss_check = []
+    
     for job_cleared in clear_ss:
         
         print(f'Preenchendo dados do serviço no Autem ({ss})......')
@@ -305,9 +307,16 @@ def jobs_localiza_autem():
         #Delete invoice
         os.remove(invoice_file)
 
+        #stores completed jobs into a list
+        ss_check.append(job_cleared['ss'])
         
         break  
-
+    
+    #save completed jobs into a file
+    with open('producao\jobs_csv\verificacao.txt', 'w') as file:
+        
+        file.write(ss_check)
+        
     browser.quit()
     
 def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path):
