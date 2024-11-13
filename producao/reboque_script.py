@@ -240,7 +240,15 @@ def jobs_localiza_autem():
         #Autem: fill invoice number into autem
         #TODO
         browser.switch_to.window(autem_browser_tab)
+        
+        #debug
+        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        
         click(job_cleared['ss'])
+        
+        #debug
+        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        
         wait_until(S('#servico_editar_assistencia').exists)
         ss_autem_number = TextField(S('#servico_editar_assistencia')).value
         write(ss_autem_number + '/' + invoice_number)
