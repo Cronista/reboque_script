@@ -254,6 +254,12 @@ def jobs_localiza_autem():
         wait_until(S('#servico_editar_assistencia').exists)
         ss_autem_number = TextField(S('#servico_editar_assistencia')).value
         write(ss_autem_number + '/' + invoice_number)
+        click('Salvar')
+        wait_until(S('#bt-negative').exists)
+        click('Não')
+        
+        #Check autem red light
+        #TODO
         
         #debug
         get_driver().save_screenshot("producao\jobs_csv\loca.png")
@@ -303,6 +309,16 @@ def jobs_localiza_autem():
         #Save and complete the job
         #TODO
         click(S('#NFList > tbody > tr > td:nth-child(11) > i'))
+        wait_until(S('#NFList > tbody > tr > td:nth-child(10) > i').exists)
+        click('Clique aqui para finalizar o envio da nota')
+        wait_until(S('#body > div.modal > div.modal-center > div > div.modal-box-title > span').exists)
+        click('Ok')
+        wait_until(S('#body > div.modal > div.modal-center > div > div.modal-box-title > span').exists)
+        
+        #debug 
+        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        
+        click('Concluir')
         
         #Delete invoice
         os.remove(invoice_file)
