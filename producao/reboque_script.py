@@ -237,6 +237,8 @@ def jobs_localiza_autem():
     
     for job_cleared in clear_ss:
         
+        ss = job_cleared['ss']
+        
         print(f'Preenchendo dados do serviço no Autem ({ss})......')
         
         #Autem: fill invoice number into autem
@@ -247,13 +249,19 @@ def jobs_localiza_autem():
         get_driver().save_screenshot("producao\jobs_csv\loca.png")
         
         click(job_cleared['ss'])
+        wait_until(S('#servico_editar_assistencia').exists)
+        
+        all_tabs = get_driver().window_handles
+        autem_browser_tab2 = all_tabs[-1]
+        get_driver().switch_to.window(autem_browser_tab2)
         
         #debug
         get_driver().save_screenshot("producao\jobs_csv\loca.png")
         
-        wait_until(S('#servico_editar_assistencia').exists)
-        ss_autem_number = TextField(S('#servico_editar_assistencia')).value
-        write(ss_autem_number + '/' + invoice_number)
+        
+        #TODO
+        ss_autem_number = TextField(below='Protocolo').value
+        write(ss_autem_number + '/' + str(invoice_number), into='#servico_editar_assistencia')
         click('Salvar')
         wait_until(S('#bt-negative').exists)
         click('Não')
@@ -263,8 +271,6 @@ def jobs_localiza_autem():
         
         #debug
         get_driver().save_screenshot("producao\jobs_csv\loca.png")
-    
-        ss = job_cleared['ss']
         
         print(f'Preenchendo dados do serviço no Localiza ({ss})......')
         browser.switch_to.window(localiza_browser_tab)
