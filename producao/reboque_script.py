@@ -28,7 +28,7 @@ login_user_localiza = os.environ['LOGIN_USER_LOCALIZA']; login_pass_localiza = o
 #set up credentials for Autem
 login_user_autem = os.environ['LOGIN_USER_AUTEM']; login_pass_autem = os.environ['LOGIN_PASS_AUTEM']; login_code_autem = os.environ['LOGIN_CODE_AUTEM']
 #set up creds. for user chrome user data
-user_data_dir = os.environ['CHROME_USER_DATA']
+user_data_dir = os.environ['CHROME_USER_DATA2']
 #set up secured constants
 reboque_cnpj = os.environ['REBOQUE_CNPJ']
 
@@ -113,7 +113,9 @@ def jobs_localiza_autem():
         
     except TimeoutException:
         
-        print('Página não carrega.')
+        print('Página do Localiza não carrega.')
+
+        browser.quit()
         
         raise SystemExit
 
