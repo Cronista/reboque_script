@@ -227,9 +227,7 @@ def jobs_localiza_autem():
     #wait download to finish
     while os.path.exists(autem_jobs_file) == False:
         
-        screen_debug(browser)
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
-        screen_debug(browser)
         time.sleep(3) 
          
     #Localiza
