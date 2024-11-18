@@ -18,6 +18,11 @@ timestamp = time.strftime('%Y%m%d-%H%M%S')
 timestamp_autem_filter = (datetime.now() - timedelta(days=10)).strftime('%d/%m/%Y %H:%M')
 timestamp_today = (datetime.now().strftime('%d/%m/%Y'))
 
+#debug
+def screen_debug(browser):
+
+    browser.save_screenshot('producao\jobs_csv\loca.png') 
+
 #path to deploy dotenv
 env_path = ('producao\db.env')
 
@@ -77,7 +82,7 @@ def jobs_localiza_autem():
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--no-sandbox')
     options.add_argument('--remote-debugging-port=9222')
-    browser = start_chrome('https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio', options=options)
+    browser = start_chrome('https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio', options=options)   
     
     #tabs management 
     localiza_browser_tab = browser.current_window_handle
@@ -113,7 +118,7 @@ def jobs_localiza_autem():
         
     except TimeoutException:
         
-        print('Página do Localiza não carrega.')
+        print('Não foi possível conectar-se ao Localiza.')
 
         browser.quit()
         
@@ -169,8 +174,7 @@ def jobs_localiza_autem():
     browser.switch_to.window(autem_browser_tab)
     
     # try:
-    #     #debug
-    #     # get_driver().save_screenshot("producao\jobs_csv\loca.png")
+    #     #screen_debug(browser)
         
     #     wait_until(S('#form-login').exists)
     #     print('Logando no Autem......')
@@ -193,12 +197,19 @@ def jobs_localiza_autem():
     #wait until the page is loaded and navigate to jobs dashboard
     # wait_until(S('#mapa_relatorio').exists)
     # go_to('https://web.autem.com.br/servicos/visualizar/')
+
+    screen_debug(browser)
     
     #change table filter parameters to include more data (about 10 days)
-    wait_until(S('#datatable_servicos > tbody').exists)
-    wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)
-    wait_until(S('#main-wrapper > div.page-wrapper > div > div:nth-child(5) > div > div > div > div > div').exists)
-    wait_until(S('#datatable_servicos_info').exists)
+    try:
+        
+        wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)
+    except TimeoutException:
+
+        print('Não foi possível conectar-se ao Autem.')
+        browser.quit()
+        raise SystemExit
+    
     click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
     wait_until(S('#filtro_de').exists)
     get_driver().execute_script("arguments[0].value = ''", S('#filtro_de').web_element)
@@ -207,18 +218,18 @@ def jobs_localiza_autem():
     
     #wait until the export button is loaded, delete current file in the directory and click the download (export) button
     #this is done so the file is not renamed to "...(1)". The files will always be copied-over updated.
-    wait_until(S('#datatable_servicos > tbody').exists)
-     
+    wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples').exists)
+    
     if os.path.exists(autem_jobs_file):
         
         os.remove(autem_jobs_file)
 
-    # click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
-    
     #wait download to finish
     while os.path.exists(autem_jobs_file) == False:
         
+        screen_debug(browser)
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
+        screen_debug(browser)
         time.sleep(3) 
          
     #Localiza
@@ -247,8 +258,7 @@ def jobs_localiza_autem():
         #TODO
         browser.switch_to.window(autem_browser_tab)
         
-        #debug
-        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        screen_debug(browser)
         
         click(job_cleared['ss'])
         wait_until(S('#servico_editar_assistencia').exists)
@@ -257,8 +267,7 @@ def jobs_localiza_autem():
         autem_browser_tab2 = all_tabs[-1]
         get_driver().switch_to.window(autem_browser_tab2)
         
-        #debug
-        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        screen_debug(browser)
         
         
         #TODO
@@ -271,8 +280,7 @@ def jobs_localiza_autem():
         #Check autem red light
         #TODO
         
-        #debug
-        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        screen_debug(browser)
         
         print(f'Preenchendo dados do serviço no Localiza ({ss})......')
         browser.switch_to.window(localiza_browser_tab)
@@ -311,8 +319,7 @@ def jobs_localiza_autem():
         #TODO
         attach_file(invoice_file, to='Anexar arquivo')
         
-        #debug 
-        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        screen_debug(browser)
         
         #Save and complete the job
         #TODO
@@ -323,8 +330,7 @@ def jobs_localiza_autem():
         click('Ok')
         wait_until(S('#body > div.modal > div.modal-center > div > div.modal-box-title > span').exists)
         
-        #debug 
-        get_driver().save_screenshot("producao\jobs_csv\loca.png")
+        screen_debug(browser)
         
         click('Concluir')
         
@@ -362,8 +368,8 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path):
     
     #write the full cnpj into nota and proceed to the next page
     
-    #debug
-    get_driver().save_screenshot("producao\jobs_csv\loca.png")
+    screen_debug(browser)
+    
     wait_until(S('#ctl00_cphCabMenu_tbCPFCNPJTomador').exists)
     
     
@@ -381,8 +387,7 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path):
     click('EMITIR >>')
     # press(ENTER)
     
-    #debug
-    get_driver().save_screenshot("producao\jobs_csv\loca.png")
+    screen_debug(browser)
     
     Alert().accept()
     wait_until(S('#ctl00_cphBase_img').exists)
