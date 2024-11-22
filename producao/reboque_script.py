@@ -33,7 +33,7 @@ login_user_localiza = os.environ['LOGIN_USER_LOCALIZA']; login_pass_localiza = o
 #set up credentials for Autem
 login_user_autem = os.environ['LOGIN_USER_AUTEM']; login_pass_autem = os.environ['LOGIN_PASS_AUTEM']; login_code_autem = os.environ['LOGIN_CODE_AUTEM']
 #set up creds. for user chrome user data
-user_data_dir = os.environ['CHROME_USER_DATA2']
+user_data_dir = os.environ['CHROME_USER_DATA1']
 #set up secured constants
 reboque_cnpj = os.environ['REBOQUE_CNPJ']
 
@@ -253,7 +253,6 @@ def jobs_localiza_autem():
         print(f'Preenchendo dados do serviço no Autem ({ss})......')
         
         #Autem: fill invoice number into autem
-        #TODO
         browser.switch_to.window(autem_browser_tab)
         
         screen_debug(browser)
@@ -268,9 +267,11 @@ def jobs_localiza_autem():
         screen_debug(browser)
         
         
-        #TODO
-        ss_autem_number = TextField(below='Protocolo').value
-        write(ss_autem_number + '/' + str(invoice_number), into='#servico_editar_assistencia')
+        # ss_autem_number = TextField(below='Protocolo').value
+        write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
+        
+        screen_debug(browser)
+        
         click('Salvar')
         wait_until(S('#bt-negative').exists)
         click('Não')
