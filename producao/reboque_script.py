@@ -197,8 +197,6 @@ def jobs_localiza_autem():
     #wait until the page is loaded and navigate to jobs dashboard
     # wait_until(S('#mapa_relatorio').exists)
     # go_to('https://web.autem.com.br/servicos/visualizar/')
-
-    screen_debug(browser)
     
     #change table filter parameters to include more data (about 10 days)
     try:
@@ -252,43 +250,45 @@ def jobs_localiza_autem():
         
         print(f'Preenchendo dados do serviço no Autem ({ss})......')
         
+        #Autem: verify if job is cleared through Autem (the last column's color indicator must be green)
+        #if the job is red, it must be reassigned from 'clear_ss' to the 'not_clear_ss' list
+        #TODO
+        # clear_ss.remove(job_cleared)
+        # not_clear_ss.append[job_cleared]  
+        
         #Autem: fill invoice number into autem
         browser.switch_to.window(autem_browser_tab)
-        
-        screen_debug(browser)
-        
         click(job_cleared['ss'])
         wait_until(S('#servico_editar_assistencia').exists)
         
-        all_tabs = get_driver().window_handles
-        autem_browser_tab2 = all_tabs[-1]
-        get_driver().switch_to.window(autem_browser_tab2)
-        
-        screen_debug(browser)
-        
-        
-        # ss_autem_number = TextField(below='Protocolo').value
+        # all_tabs = get_driver().window_handles
+        # autem_browser_tab2 = all_tabs[-1]
+        # get_driver().switch_to.window(autem_browser_tab2)
+
         write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
-        
-        screen_debug(browser)
-        
         click('Salvar')
         wait_until(S('#bt-negative').exists)
-        click('Não')
-        
-        #Check autem red light
-        #TODO
-        
-        screen_debug(browser)
+        click(S('#bt-negative'))
+        get_driver().close()
         
         print(f'Preenchendo dados do serviço no Localiza ({ss})......')
         browser.switch_to.window(localiza_browser_tab)
+        
         #convert and format the SS's float monetary value to string so Localiza can read it properly
         ss_value_number = '{:.2f}'.format(job_cleared['faturamento']).replace('.', '')
         #open job painel
         # click(job_cleared['ss'])
         click(S(f'//tr[@data-id-ref="{job_cleared["ss"]}"]'))
-        wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
+        
+        try:
+            
+            wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
+        
+        except TimeoutException:
+            
+            clear_ss.remove(job_cleared)
+            not_clear_ss.append[job_cleared]    
+        
         
         #input job monetary value into it's field
         get_driver().execute_script(f"arguments[0].value = {ss_value_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
@@ -297,7 +297,7 @@ def jobs_localiza_autem():
         
         print(f'Localizando e-mail com a nota ({ss})......')
         
-        ss_filename = download_attachments(gmail, job_cleared['ss'])
+        ss_filename = download_attachments(gmail, job_cleared['ss'], browser)
         clear_cnpj = get_4_cnpj(ss_filename)
         get_driver().execute_script(f"arguments[0].value = {clear_cnpj}", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
         
@@ -316,7 +316,10 @@ def jobs_localiza_autem():
         
         #Feed invoice to localiza
         #TODO
-        attach_file(invoice_file, to='Anexar arquivo')
+        browser.switch_to.window(localiza_browser_tab)
+        # attach_file(invoice_file, to='Anexar arquivo')
+        # file_input_ele = S('#NFList > tbody > tr > td:nth-child(7) > div > label > span')
+        # file_input_ele.web_element.send_keys(invoice_file)
         
         screen_debug(browser)
         
@@ -369,7 +372,18 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path):
     
     screen_debug(browser)
     
-    wait_until(S('#ctl00_cphCabMenu_tbCPFCNPJTomador').exists)
+    try:
+        
+        wait_until(S('#ctl00_cphCabMenu_tbCPFCNPJTomador').exists)
+        
+    except TimeoutException:
+        
+        browser.quit()
+        
+        print('Não foi possível conectar-se ao NotaCarioca.')
+        input('Enter para sair.')
+        
+        raise SystemExit
     
     
     write(full_cnpj, into=S('#ctl00_cphCabMenu_tbCPFCNPJTomador'))
@@ -386,11 +400,11 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path):
     click('EMITIR >>')
     # press(ENTER)
     
-    screen_debug(browser)
-    
     Alert().accept()
     wait_until(S('#ctl00_cphBase_img').exists)
     click(S('#ctl00_cphBase_btGerarPDF'))
+    
+    screen_debug(browser)
     
     #locate file based on its partial file name
     invoice_file = glob.glob(f'{jobs_file_path}/**/*NFSe_*', recursive=True)
@@ -403,7 +417,8 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path):
     click(S('#ctl00_cphBase_btVoltar'))
     
     #manages file
-    default_path = os.path.join(jobs_file_path, invoice_file)
+    #TODO
+    default_path = os.path.join(jobs_file_path, invoice_file[0])
     custom_invoice_file_path = os.path.join("producao\jobs_csv\ss_invoice", default_path)
     os.replace(default_path, custom_invoice_file_path)
     
@@ -505,13 +520,24 @@ def jobs_pandas():
     return clear_ss, not_clear_ss
 
 ##Google API
-def download_attachments(gmail, ss: str) -> str:
+def download_attachments(gmail, ss: str, browser) -> str:
     
     #define the query to search for emails with a specific subject and attachments
     query = f'subject:"Localiza Gestão de Frotas 24 Horas - SS: {ss}" has:attachment'
     
     #search for query
-    messages = gmail.get_messages(query=query)
+    try:
+        
+        messages = gmail.get_messages(query=query)
+    
+    except Exception:
+        
+        print('Token do Gmail API expirado. Renicie o programa.')
+        input('Enter para sair.')
+        
+        browser.quit()
+        
+        raise SystemExit
     
     #treat not finding messages
     if not messages:
