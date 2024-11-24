@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import csv, os, time, fitz, glob
 import pandas as pd
 import numpy as np
+import pygetwindow as gw
 from datetime import datetime, timedelta
 from simplegmail import Gmail
 
@@ -315,8 +316,15 @@ def jobs_localiza_autem():
         invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path)
         
         #Feed invoice to localiza
+        #using pygetwindow (as gw) to identify and close the system file selector window. This is done because I found no other way to upload the invoice;
+        #all other methods could not find the 'input' element. The field is clicked, the file path is sent through write(), as it correctly writes on the input field;
+        #and then the window 'Abrir' is closed.
         #TODO
         browser.switch_to.window(localiza_browser_tab)
+        click(S('#NFList > tbody > tr > td:nth-child(7) > div > label > span'))
+        write(invoice_file)
+        win_diag = gw.getWindowsWithTitle('Abrir')
+        win_diag[0].close()
         # attach_file(invoice_file, to='Anexar arquivo')
         # file_input_ele = S('#NFList > tbody > tr > td:nth-child(7) > div > label > span')
         # file_input_ele.web_element.send_keys(invoice_file)
