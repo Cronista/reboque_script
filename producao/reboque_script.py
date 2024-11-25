@@ -77,6 +77,7 @@ def jobs_localiza_autem():
              } 
     
     options.add_experimental_option('prefs', prefs)
+    options.add_experimental_option("excludeSwitches", ["enable-logging"])
     options.add_argument(f'--user-data-dir={user_data_dir}')
     options.add_argument('headless')
     options.add_argument('--disable-infobars')
@@ -120,6 +121,7 @@ def jobs_localiza_autem():
     except TimeoutException:
         
         print('Não foi possível conectar-se ao Localiza.')
+        input('Enter para sair.')
 
         browser.quit()
         
@@ -321,9 +323,25 @@ def jobs_localiza_autem():
         #and then the window 'Abrir' is closed.
         #TODO
         browser.switch_to.window(localiza_browser_tab)
+        
+        screen_debug(browser)
+        
+        print(gw.getAllTitles())
+        
         click(S('#NFList > tbody > tr > td:nth-child(7) > div > label > span'))
+        
+        print(gw.getAllTitles())
+        
+        screen_debug(browser)
+        
         write(invoice_file)
+        
+        screen_debug(browser)
+        
         win_diag = gw.getWindowsWithTitle('Abrir')
+        
+        screen_debug(browser)
+        
         win_diag[0].close()
         # attach_file(invoice_file, to='Anexar arquivo')
         # file_input_ele = S('#NFList > tbody > tr > td:nth-child(7) > div > label > span')
@@ -415,10 +433,10 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path):
     screen_debug(browser)
     
     #locate file based on its partial file name
-    invoice_file = glob.glob(f'{jobs_file_path}/**/*NFSe_*', recursive=True)
+    invoice_file = glob.glob(f'{jobs_file_path}/**/*NFSe_*.pdf', recursive=True)
     
     #waits until the file is downloaded
-    while invoice_file == []:
+    while len(invoice_file) == 0:
         
         time.sleep(1)
         
@@ -426,11 +444,11 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path):
     
     #manages file
     #TODO
-    default_path = os.path.join(jobs_file_path, invoice_file[0])
-    custom_invoice_file_path = os.path.join("producao\jobs_csv\ss_invoice", default_path)
-    os.replace(default_path, custom_invoice_file_path)
+    # default_path = os.path.join(jobs_file_path, invoice_file[0])
+    # custom_invoice_file_path = os.path.join("producao\jobs_csv\ss_invoice", default_path)
+    # os.replace(default_path, custom_invoice_file_path)
     
-    return custom_invoice_file_path
+    return invoice_file[0]
     
 ##Pandas
 #Compare job lists
