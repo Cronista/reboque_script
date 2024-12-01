@@ -1,6 +1,7 @@
 from helium import *
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import csv, os, time, fitz, glob
@@ -78,6 +79,11 @@ def jobs_localiza_autem():
     
     options.add_experimental_option('prefs', prefs)
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
+    # options.set_capability("browserVersion", "130")
+    options.add_argument("--silent")
+    # options.add_argument("--window-size=800x600")
+    options.add_argument("--log-level=3")
+    options.add_argument('--disable-gpu')
     options.add_argument(f'--user-data-dir={user_data_dir}')
     options.add_argument('headless')
     options.add_argument('--disable-infobars')
@@ -88,6 +94,7 @@ def jobs_localiza_autem():
     
     #tabs management 
     localiza_browser_tab = browser.current_window_handle
+    screen_debug(browser)
 
     ##wait page to load
     # wait_until(S('#txt-login-new').exists)
@@ -208,6 +215,7 @@ def jobs_localiza_autem():
     except TimeoutException:
 
         print('Não foi possível conectar-se ao Autem.')
+        input('Enter para sair.')
         browser.quit()
         raise SystemExit
     
@@ -237,6 +245,12 @@ def jobs_localiza_autem():
     
     #(#3 passo)
     #access cleared jobs with the return value from jobs_pandas
+    
+    #open NotaCarioca site so it can be used inside the loop
+    browser.execute_script("window.open('https://notacarioca.rio.gov.br/contribuinte/nota.aspx', '_blank')")
+    all_tabs = browser.window_handles
+    nota_browser_tab = all_tabs[-1]
+    
     browser.switch_to.window(localiza_browser_tab)
     #wait until the jobs table is loaded
     wait_until(S('tbody').exists)
@@ -276,6 +290,7 @@ def jobs_localiza_autem():
         
         print(f'Preenchendo dados do serviço no Localiza ({ss})......')
         browser.switch_to.window(localiza_browser_tab)
+        screen_debug(browser)
         
         #convert and format the SS's float monetary value to string so Localiza can read it properly
         ss_value_number = '{:.2f}'.format(job_cleared['faturamento']).replace('.', '')
@@ -315,39 +330,20 @@ def jobs_localiza_autem():
         write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
         
         #get invoice from nota carioca
-        invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path)
+        invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
         
         #Feed invoice to localiza
-        #using pygetwindow (as gw) to identify and close the system file selector window. This is done because I found no other way to upload the invoice;
-        #all other methods could not find the 'input' element. The field is clicked, the file path is sent through write(), as it correctly writes on the input field;
-        #and then the window 'Abrir' is closed.
         #TODO
         browser.switch_to.window(localiza_browser_tab)
-        
         screen_debug(browser)
-        
-        print(gw.getAllTitles())
-        
-        click(S('#NFList > tbody > tr > td:nth-child(7) > div > label > span'))
-        
-        print(gw.getAllTitles())
-        
+        print(browser.window_handles)
+        invoice_upload = browser.find_element(By.CSS_SELECTOR, "input[type='file']")
         screen_debug(browser)
-        
-        write(invoice_file)
-        
+        invoice_upload.send_keys(invoice_file)
         screen_debug(browser)
-        
-        win_diag = gw.getWindowsWithTitle('Abrir')
-        
-        screen_debug(browser)
-        
-        win_diag[0].close()
         # attach_file(invoice_file, to='Anexar arquivo')
         # file_input_ele = S('#NFList > tbody > tr > td:nth-child(7) > div > label > span')
         # file_input_ele.web_element.send_keys(invoice_file)
-        
-        screen_debug(browser)
         
         #Save and complete the job
         #TODO
@@ -377,7 +373,7 @@ def jobs_localiza_autem():
         
     browser.quit()
     
-def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path):
+def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_browser_tab):
             
     #NotaCarioca
     #TODO cnpj ending in 6663: extra step -> click on first
@@ -385,11 +381,9 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path):
     
     print(f'Logando no Nota Carioca ({ss})......')
     
-    #create and switch tabs
-    browser.execute_script("window.open('https://notacarioca.rio.gov.br/contribuinte/nota.aspx', '_blank')")
-    all_tabs = browser.window_handles
-    nota_browser_tab = all_tabs[-1]
+    #switch tabs
     browser.switch_to.window(nota_browser_tab)
+    screen_debug(browser)
     
     #get the full specific cnpj
     _, full_cnpj = get_4_cnpj(ss_filename)
