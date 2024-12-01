@@ -36,6 +36,7 @@ login_user_localiza = os.environ['LOGIN_USER_LOCALIZA']; login_pass_localiza = o
 login_user_autem = os.environ['LOGIN_USER_AUTEM']; login_pass_autem = os.environ['LOGIN_PASS_AUTEM']; login_code_autem = os.environ['LOGIN_CODE_AUTEM']
 #set up creds. for user chrome user data
 user_data_dir = os.environ['CHROME_USER_DATA1']
+user_download_dir = os.environ['USER_DOWNLOAD_DIR']
 #set up secured constants
 reboque_cnpj = os.environ['REBOQUE_CNPJ']
 
@@ -60,7 +61,9 @@ def jobs_localiza_autem():
 
     #set file paths
     jobs_file_path = os.path.join(os.getcwd(), 'producao', 'jobs_csv')
-    autem_jobs_file = os.path.join(jobs_file_path, 'exportGrid_AutEM_xls.xlsx')
+    # autem_jobs_file = os.path.join(jobs_file_path, 'exportGrid_AutEM_xls.xlsx')
+    autem_jobs_file = os.path.join(user_download_dir, 'exportGrid_AutEM_xls.xlsx')
+    
     
     #Localiza
     #initiate browser
@@ -70,7 +73,7 @@ def jobs_localiza_autem():
     options = webdriver.ChromeOptions()
     prefs = {
         
-        'download.default_directory': jobs_file_path,
+        # 'download.default_directory': jobs_file_path,
         'download.prompt_for_download': False,
         'download.directory_upgrade': True, 
         'safebrowsing.enabled': True
@@ -84,7 +87,17 @@ def jobs_localiza_autem():
     # options.add_argument("--window-size=800x600")
     options.add_argument("--log-level=3")
     options.add_argument('--disable-gpu')
+    """
+    must be changed according to PC
+    
+    """
     options.add_argument(f'--user-data-dir={user_data_dir}')
+    options.add_argument("--profile-directory=Profile 1")
+    
+    """
+    must be changed according to PC
+    
+    """
     options.add_argument('headless')
     options.add_argument('--disable-infobars')
     options.add_argument('--disable-dev-shm-usage')
@@ -237,7 +250,10 @@ def jobs_localiza_autem():
     while os.path.exists(autem_jobs_file) == False:
         
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
-        time.sleep(3) 
+        time.sleep(3)
+    
+    corrected_autem_jobs_file = os.path.join(jobs_file_path, 'exportGrid_AutEM_xls.xlsx')   
+    os.replace(autem_jobs_file, corrected_autem_jobs_file)
          
     #Localiza
     #initialize Gmail
@@ -337,7 +353,7 @@ def jobs_localiza_autem():
         browser.switch_to.window(localiza_browser_tab)
         screen_debug(browser)
         print(browser.window_handles)
-        invoice_upload = browser.find_element(By.CSS_SELECTOR, "input[type='file']")
+        invoice_upload = browser.find_element(By.CSS_SELECTOR, "input[name='PDF']")
         screen_debug(browser)
         invoice_upload.send_keys(invoice_file)
         screen_debug(browser)
