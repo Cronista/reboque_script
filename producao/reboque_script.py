@@ -74,19 +74,19 @@ def jobs_localiza_autem():
     prefs = {
         
         # 'download.default_directory': jobs_file_path,
-        'download.prompt_for_download': False,
-        'download.directory_upgrade': True, 
-        'safebrowsing.enabled': True
+        # 'download.prompt_for_download': False,
+        # 'download.directory_upgrade': True, 
+        # 'safebrowsing.enabled': True
              
              } 
     
-    options.add_experimental_option('prefs', prefs)
-    options.add_experimental_option("excludeSwitches", ["enable-logging"])
+    # options.add_experimental_option('prefs', prefs)
+    # options.add_experimental_option("excludeSwitches", ["enable-logging"])
     # options.set_capability("browserVersion", "130")
-    options.add_argument("--silent")
+    # options.add_argument("--silent")
     # options.add_argument("--window-size=800x600")
-    options.add_argument("--log-level=3")
-    options.add_argument('--disable-gpu')
+    # options.add_argument("--log-level=3")
+    # options.add_argument('--disable-gpu')
     """
     must be changed according to PC
     
@@ -98,12 +98,12 @@ def jobs_localiza_autem():
     must be changed according to PC
     
     """
-    options.add_argument('headless')
-    options.add_argument('--disable-infobars')
-    options.add_argument('--disable-dev-shm-usage')
-    options.add_argument('--no-sandbox')
-    options.add_argument('--remote-debugging-port=9222')
-    browser = start_chrome('https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio', options=options)   
+    # options.add_argument('headless')
+    # options.add_argument('--disable-infobars')
+    # options.add_argument('--disable-dev-shm-usage')
+    # options.add_argument('--no-sandbox')
+    # options.add_argument('--remote-debugging-port=9222')
+    browser = start_chrome('https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio', options=options, headless=True)   
     
     #tabs management 
     localiza_browser_tab = browser.current_window_handle
@@ -290,9 +290,9 @@ def jobs_localiza_autem():
         # not_clear_ss.append[job_cleared]  
         
         #Autem: fill invoice number into autem
-        browser.switch_to.window(autem_browser_tab)
-        click(job_cleared['ss'])
-        wait_until(S('#servico_editar_assistencia').exists)
+            # browser.switch_to.window(autem_browser_tab)
+            # click(job_cleared['ss'])
+            # wait_until(S('#servico_editar_assistencia').exists)
         
         # all_tabs = get_driver().window_handles
         # autem_browser_tab2 = all_tabs[-1]
@@ -346,7 +346,7 @@ def jobs_localiza_autem():
         write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
         
         #get invoice from nota carioca
-        invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
+            # invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
         
         #Feed invoice to localiza
         #TODO
@@ -355,7 +355,7 @@ def jobs_localiza_autem():
         print(browser.window_handles)
         invoice_upload = browser.find_element(By.CSS_SELECTOR, "input[name='PDF']")
         screen_debug(browser)
-        invoice_upload.send_keys(invoice_file)
+        invoice_upload.send_keys('producao\jobs_csv\NFSe_00008376_13432007.pdf')
         screen_debug(browser)
         # attach_file(invoice_file, to='Anexar arquivo')
         # file_input_ele = S('#NFList > tbody > tr > td:nth-child(7) > div > label > span')
@@ -375,7 +375,7 @@ def jobs_localiza_autem():
         click('Concluir')
         
         #Delete invoice
-        os.remove(invoice_file)
+            # os.remove(invoice_file)
 
         #stores completed jobs into a list
         ss_check.append(job_cleared['ss'])
@@ -454,9 +454,9 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     
     #manages file
     #TODO
-    # default_path = os.path.join(jobs_file_path, invoice_file[0])
-    # custom_invoice_file_path = os.path.join("producao\jobs_csv\ss_invoice", default_path)
-    # os.replace(default_path, custom_invoice_file_path)
+    default_path = os.path.join(user_download_dir, invoice_file[0])
+    corrected_nota_file_path = os.path.join(jobs_file_path, invoice_file[0])
+    os.replace(default_path, corrected_nota_file_path)
     
     return invoice_file[0]
     
