@@ -362,7 +362,6 @@ def jobs_localiza_autem():
         invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
         
         #Feed invoice to localiza
-        #TODO
         browser.switch_to.window(localiza_browser_tab)
         wait_until(S('#NFList > tbody > tr > td:nth-child(7) > div > label > span').exists)
         invoice_upload = browser.find_element(By.CSS_SELECTOR, "input[name='PDF']")
@@ -374,7 +373,7 @@ def jobs_localiza_autem():
         # file_input_ele.web_element.send_keys(invoice_file)
         
         #Save and complete the job
-        #TODO
+        #TODO; update js to 'wake' the field into adding the commas and periods
         click(S('#NFList > tbody > tr > td:nth-child(11) > i'))
         wait_until(S('#NFList > tbody > tr > td:nth-child(10) > i').exists)
         click('Clique aqui para finalizar o envio da nota')
