@@ -111,12 +111,11 @@ def jobs_localiza_autem():
     # options.add_argument('--disable-infobars')
     # options.add_argument('--disable-dev-shm-usage')
     # options.add_argument('--no-sandbox')
-    # options.add_argument('--remote-debugging-port=9222')
+    options.add_argument('--remote-debugging-port=9222')
     browser = start_chrome('https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio', options=options, headless=True)   
     
     #tabs management 
     localiza_browser_tab = browser.current_window_handle
-    screen_debug(browser)
 
     ##wait page to load
     # wait_until(S('#txt-login-new').exists)
@@ -319,7 +318,6 @@ def jobs_localiza_autem():
         
         print(f'Preenchendo dados do serviço no Localiza ({ss})......')
         browser.switch_to.window(localiza_browser_tab)
-        screen_debug(browser)
         
         #convert and format the SS's float monetary value to string so Localiza can read it properly
         ss_value_number = '{:.2f}'.format(job_cleared['faturamento']).replace('.', '')
@@ -339,6 +337,10 @@ def jobs_localiza_autem():
         
         #input job monetary value into it's field
         get_driver().execute_script(f"arguments[0].value = {ss_value_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
+        get_driver().execute_script("""
+        arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+        arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+        """, S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
         
         #access email, get the 4 last digits from specific CNPJ and inputs it into the its field'
         
@@ -347,9 +349,17 @@ def jobs_localiza_autem():
         ss_filename = download_attachments(gmail, job_cleared['ss'], browser)
         clear_cnpj = get_4_cnpj(ss_filename)
         get_driver().execute_script(f"arguments[0].value = {clear_cnpj}", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
+        get_driver().execute_script("""
+        arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+        arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+        """, S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
         
         #input reboque company cnpj into its field
         get_driver().execute_script(f"arguments[0].value = {reboque_cnpj}", S('#cnpj-emissor').web_element)
+        get_driver().execute_script("""
+        arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+        arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+        """, S('#cnpj-emissor').web_element)
         
         #input invoice number into its field and iterate it
         write(invoice_number, into=S('#NFList > tbody > tr > td:nth-child(4) > div > input'))
@@ -361,28 +371,28 @@ def jobs_localiza_autem():
         #get invoice from nota carioca
         invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
         
+        print(f'Ainda preenchendo o Localiza ({ss})......')
+        
         #Feed invoice to localiza
         browser.switch_to.window(localiza_browser_tab)
         wait_until(S('#NFList > tbody > tr > td:nth-child(7) > div > label > span').exists)
         invoice_upload = browser.find_element(By.CSS_SELECTOR, "input[name='PDF']")
         # invoice_upload.send_keys(r'C:\Users\whama\OneDrive\proj\Python\main\reboque_script\reboque_script\producao\jobs_csv\NFSe_00008376_13432007.pdf')
         invoice_upload.send_keys(invoice_file)
-        screen_debug(browser)
         # attach_file(invoice_file, to='Anexar arquivo')
         # file_input_ele = S('#NFList > tbody > tr > td:nth-child(7) > div > label > span')
         # file_input_ele.web_element.send_keys(invoice_file)
         
         #Save and complete the job
         #TODO; update js to 'wake' the field into adding the commas and periods
-        click(S('#NFList > tbody > tr > td:nth-child(11) > i'))
+        wait_until(S('#NFList > tbody > tr > td:nth-child(11)').exists)
+        click(S('#NFList > tbody > tr > td:nth-child(11)'))
+        #TODO did not find element v
         wait_until(S('#NFList > tbody > tr > td:nth-child(10) > i').exists)
         click('Clique aqui para finalizar o envio da nota')
-        wait_until(S('#body > div.modal > div.modal-center > div > div.modal-box-title > span').exists)
+        wait_until(S('body > div.modal > div.modal-center > div > div.modal-box-title > span').exists)
         click('Ok')
-        wait_until(S('#body > div.modal > div.modal-center > div > div.modal-box-title > span').exists)
-        
-        screen_debug(browser)
-        
+        wait_until(S('body > div.modal > div.modal-center > div > div.modal-box-actions > button').exists)
         click('Concluir')
         
         #Delete invoice
@@ -410,14 +420,11 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     
     #switch tabs
     browser.switch_to.window(nota_browser_tab)
-    screen_debug(browser)
     
     #get the full specific cnpj
     _, full_cnpj = get_4_cnpj(ss_filename)
     
     #write the full cnpj into nota and proceed to the next page
-    
-    screen_debug(browser)
     
     try:
         
@@ -451,23 +458,22 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     wait_until(S('#ctl00_cphBase_img').exists)
     click(S('#ctl00_cphBase_btGerarPDF'))
     
-    screen_debug(browser)
-    
     #locate file based on its partial file name
-    invoice_file = glob.glob(f'{jobs_file_path}/**/*NFSe_*.pdf', recursive=True)
+    invoice_file = glob.glob(f'{user_download_dir}/**/*NFSe_*.pdf', recursive=True)
     
     #waits until the file is downloaded
     while len(invoice_file) == 0:
         
+        invoice_file = glob.glob(f'{user_download_dir}/**/*NFSe_*.pdf', recursive=True)
         time.sleep(1)
         
     click(S('#ctl00_cphBase_btVoltar'))
     
     #manages file
-    #TODO
-    default_path = os.path.join(user_download_dir, invoice_file[0])
-    corrected_nota_file_path = os.path.join(jobs_file_path, invoice_file[0])
-    os.replace(default_path, corrected_nota_file_path)
+    #TODO; ajust path: correct is the same as default
+    # default_path = os.path.join(user_download_dir, invoice_file[0])
+    # corrected_nota_file_path = os.path.join(jobs_file_path, invoice_file[0])
+    # os.replace(default_path, corrected_nota_file_path)
     
     return invoice_file[0]
     
