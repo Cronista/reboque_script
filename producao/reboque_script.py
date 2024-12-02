@@ -35,8 +35,17 @@ login_user_localiza = os.environ['LOGIN_USER_LOCALIZA']; login_pass_localiza = o
 #set up credentials for Autem
 login_user_autem = os.environ['LOGIN_USER_AUTEM']; login_pass_autem = os.environ['LOGIN_PASS_AUTEM']; login_code_autem = os.environ['LOGIN_CODE_AUTEM']
 #set up creds. for user chrome user data
+"""
+Edit before use. Specifc to PC.
+
+"""
 user_data_dir = os.environ['CHROME_USER_DATA1']
 user_download_dir = os.environ['USER_DOWNLOAD_DIR']
+
+"""
+Edit before use. Specifc to PC.
+
+"""
 #set up secured constants
 reboque_cnpj = os.environ['REBOQUE_CNPJ']
 
@@ -240,19 +249,27 @@ def jobs_localiza_autem():
     
     #wait until the export button is loaded, delete current file in the directory and click the download (export) button
     #this is done so the file is not renamed to "...(1)". The files will always be copied-over updated.
+    #also waits the download to finish
+    #dl dir is default chrome download. The file is moved back to the project's folder.
     wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples').exists)
     
     if os.path.exists(autem_jobs_file):
         
         os.remove(autem_jobs_file)
 
-    #wait download to finish
     while os.path.exists(autem_jobs_file) == False:
         
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
         time.sleep(3)
     
-    corrected_autem_jobs_file = os.path.join(jobs_file_path, 'exportGrid_AutEM_xls.xlsx')   
+    corrected_autem_jobs_file = os.path.join(jobs_file_path, 'exportGrid_AutEM_xls.xlsx') 
+    
+    
+    if os.path.exists(corrected_autem_jobs_file):
+        
+        os.remove(corrected_autem_jobs_file)
+        
+       
     os.replace(autem_jobs_file, corrected_autem_jobs_file)
          
     #Localiza
@@ -290,13 +307,9 @@ def jobs_localiza_autem():
         # not_clear_ss.append[job_cleared]  
         
         #Autem: fill invoice number into autem
-            # browser.switch_to.window(autem_browser_tab)
-            # click(job_cleared['ss'])
-            # wait_until(S('#servico_editar_assistencia').exists)
-        
-        # all_tabs = get_driver().window_handles
-        # autem_browser_tab2 = all_tabs[-1]
-        # get_driver().switch_to.window(autem_browser_tab2)
+        browser.switch_to.window(autem_browser_tab)
+        click(job_cleared['ss'])
+        wait_until(S('#servico_editar_assistencia').exists)
 
         write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
         click('Salvar')
@@ -346,16 +359,15 @@ def jobs_localiza_autem():
         write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
         
         #get invoice from nota carioca
-            # invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
+        invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
         
         #Feed invoice to localiza
         #TODO
         browser.switch_to.window(localiza_browser_tab)
-        screen_debug(browser)
-        print(browser.window_handles)
+        wait_until(S('#NFList > tbody > tr > td:nth-child(7) > div > label > span').exists)
         invoice_upload = browser.find_element(By.CSS_SELECTOR, "input[name='PDF']")
-        screen_debug(browser)
-        invoice_upload.send_keys('producao\jobs_csv\NFSe_00008376_13432007.pdf')
+        # invoice_upload.send_keys(r'C:\Users\whama\OneDrive\proj\Python\main\reboque_script\reboque_script\producao\jobs_csv\NFSe_00008376_13432007.pdf')
+        invoice_upload.send_keys(invoice_file)
         screen_debug(browser)
         # attach_file(invoice_file, to='Anexar arquivo')
         # file_input_ele = S('#NFList > tbody > tr > td:nth-child(7) > div > label > span')
@@ -375,7 +387,7 @@ def jobs_localiza_autem():
         click('Concluir')
         
         #Delete invoice
-            # os.remove(invoice_file)
+        os.remove(invoice_file)
 
         #stores completed jobs into a list
         ss_check.append(job_cleared['ss'])
