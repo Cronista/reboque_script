@@ -112,7 +112,7 @@ def jobs_localiza_autem():
     # options.add_argument('--disable-dev-shm-usage')
     # options.add_argument('--no-sandbox')
     options.add_argument('--remote-debugging-port=9222')
-    browser = start_chrome('https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio', options=options, headless=True)   
+    browser = start_chrome('https://fornecedor.localiza.com/Portal/PortalFornecedor#/financeiro/nf-pendentes-envio', options=options, headless=False)   
     
     #tabs management 
     localiza_browser_tab = browser.current_window_handle
@@ -233,6 +233,7 @@ def jobs_localiza_autem():
     try:
         
         wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)
+        
     except TimeoutException:
 
         print('Não foi possível conectar-se ao Autem.')
@@ -241,7 +242,18 @@ def jobs_localiza_autem():
         raise SystemExit
     
     click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
-    wait_until(S('#filtro_de').exists)
+    
+    try:
+    
+        wait_until(S('#filtro_de').exists, timeout_secs= 30)
+    
+    except TimeoutException:
+
+        print('Não foi possível conectar-se ao Autem.(Página não carrega).')
+        input('Enter para sair.')
+        browser.quit()
+        raise SystemExit
+    
     get_driver().execute_script("arguments[0].value = ''", S('#filtro_de').web_element)
     write(timestamp_autem_filter, into=S('#filtro_de'))
     click(S('#btn_filtrar'))
@@ -332,7 +344,7 @@ def jobs_localiza_autem():
         except TimeoutException:
             
             clear_ss.remove(job_cleared)
-            not_clear_ss.append[job_cleared]    
+            not_clear_ss.append(job_cleared)  
         
         
         #input job monetary value into it's field
@@ -348,7 +360,7 @@ def jobs_localiza_autem():
         
         ss_filename = download_attachments(gmail, job_cleared['ss'], browser)
         clear_cnpj = get_4_cnpj(ss_filename)
-        get_driver().execute_script(f"arguments[0].value = {clear_cnpj}", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
+        get_driver().execute_script(f"arguments[0].value = {clear_cnpj[0]}", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
         get_driver().execute_script("""
         arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
         arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
@@ -384,13 +396,14 @@ def jobs_localiza_autem():
         # file_input_ele.web_element.send_keys(invoice_file)
         
         #Save and complete the job
-        #TODO; update js to 'wake' the field into adding the commas and periods
-        wait_until(S('#NFList > tbody > tr > td:nth-child(11)').exists)
-        click(S('#NFList > tbody > tr > td:nth-child(11)'))
+        wait_until(S("i[class='icon icon-save color-edit save-note'").exists)
+        click(S("i[class='icon icon-save color-edit save-note'"))
+        time.sleep(3)
+        click(S("i[class='icon icon-save color-edit save-note'"))
+        wait_until(S("i[class='icon icon-pencil color-edit edit-note'").exists)
         #TODO did not find element v
-        wait_until(S('#NFList > tbody > tr > td:nth-child(10) > i').exists)
         click('Clique aqui para finalizar o envio da nota')
-        wait_until(S('body > div.modal > div.modal-center > div > div.modal-box-title > span').exists)
+        wait_until(S('#btnConcluir').exists, timeout_secs= 30)
         click('Ok')
         wait_until(S('body > div.modal > div.modal-center > div > div.modal-box-actions > button').exists)
         click('Concluir')
@@ -610,7 +623,7 @@ def download_attachments(gmail, ss: str, browser) -> str:
           
 #extract the last four digits from the specific CNPJ   
 def get_4_cnpj(filename) -> str:
-    
+    #TODO SS_2NICNZ_30 not getting last 4 digits, gets first 4 instead. 
     cnpj_pdf = fitz.open(f"producao\jobs_csv\ss_pdf\{filename}")
     
     for page_num, page in enumerate(cnpj_pdf):
