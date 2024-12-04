@@ -305,121 +305,150 @@ def jobs_localiza_autem():
     
     ss_check = []
     
+    freio = 0
+        
     for job_cleared in clear_ss:
         
-        ss = job_cleared['ss']
-        
-        print(f'Preenchendo dados do serviço no Autem ({ss})......')
-        
-        #Autem: verify if job is cleared through Autem (the last column's color indicator must be green)
-        #if the job is red, it must be reassigned from 'clear_ss' to the 'not_clear_ss' list
-        #TODO
-        # clear_ss.remove(job_cleared)
-        # not_clear_ss.append[job_cleared]  
-        
-        #Autem: fill invoice number into autem
-        browser.switch_to.window(autem_browser_tab)
-        click(job_cleared['ss'])
-        wait_until(S('#servico_editar_assistencia').exists)
-
-        write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
-        click('Salvar')
-        wait_until(S('#bt-negative').exists)
-        click(S('#bt-negative'))
-        get_driver().close()
-        
-        print(f'Preenchendo dados do serviço no Localiza ({ss})......')
-        browser.switch_to.window(localiza_browser_tab)
-        
-        #convert and format the SS's float monetary value to string so Localiza can read it properly
-        ss_value_number = '{:.2f}'.format(job_cleared['faturamento']).replace('.', '')
-        #open job painel
-        # click(job_cleared['ss'])
-        click(S(f'//tr[@data-id-ref="{job_cleared["ss"]}"]'))
-        
         try:
-            
-            wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
         
-        except TimeoutException:
+            ss = job_cleared['ss']
+            
+            print(f'Preenchendo dados do serviço no Autem ({ss})......')
+            
+            #Autem: verify if job is cleared through Autem (the last column's color indicator must be green)
+            #if the job is red, it must be reassigned from 'clear_ss' to the 'not_clear_ss' list
+            #TODO
+            # clear_ss.remove(job_cleared)
+            # not_clear_ss.append[job_cleared]  
+            
+            #Autem: fill invoice number into autem
+            browser.switch_to.window(autem_browser_tab)
+            refresh()
+            wait_until(S('body > main > section > div > div.grid-group > table > tbody > tr:nth-child(1)').exists)
+            click(job_cleared['ss'])
+            wait_until(S('#servico_editar_assistencia').exists)
+
+            write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
+            click('Salvar')
+            wait_until(S('#bt-negative').exists)
+            click(S('#bt-negative'))
+            get_driver().close()
+            
+            print(f'Preenchendo dados do serviço no Localiza ({ss})......')
+            browser.switch_to.window(localiza_browser_tab)
+            
+            #convert and format the SS's float monetary value to string so Localiza can read it properly
+            ss_value_number = '{:.2f}'.format(job_cleared['faturamento']).replace('.', '')
+            #open job painel
+            # click(job_cleared['ss'])
+            click(S(f'//tr[@data-id-ref="{job_cleared["ss"]}"]'))
+            
+            try:
+                
+                wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
+            
+            except TimeoutException:
+                
+                clear_ss.remove(job_cleared)
+                not_clear_ss.append(job_cleared)
+                
+                continue 
+            
+            
+            #input job monetary value into it's field
+            get_driver().execute_script(f"arguments[0].value = {ss_value_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
+            get_driver().execute_script("""
+            arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+            arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+            """, S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
+            
+            #access email, get the 4 last digits from specific CNPJ and inputs it into the its field'
+            
+            print(f'Localizando e-mail com a nota ({ss})......')
+            
+            #TODO ignore the '-' coming from the last 4 cnpj number (01-08), maybe not the problem
+            ss_filename = download_attachments(gmail, job_cleared['ss'], browser)
+            clear_cnpj = get_4_cnpj(ss_filename)
+            get_driver().execute_script(f"arguments[0].value = {clear_cnpj[0]}", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
+            get_driver().execute_script("""
+            arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+            arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+            """, S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
+            
+            #input reboque company cnpj into its field
+            get_driver().execute_script(f"arguments[0].value = {reboque_cnpj}", S('#cnpj-emissor').web_element)
+            get_driver().execute_script("""
+            arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+            arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+            """, S('#cnpj-emissor').web_element)
+            
+            #input invoice number into its field and iterate it
+            write(invoice_number, into=S('#NFList > tbody > tr > td:nth-child(4) > div > input'))
+            invoice_number += 1
+            
+            #input today date into its field
+            write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
+            
+            #get invoice from nota carioca
+            invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
+            
+            print(f'Ainda preenchendo o Localiza ({ss})......')
+            
+            #Feed invoice to localiza
+            browser.switch_to.window(localiza_browser_tab)
+            wait_until(S('#NFList > tbody > tr > td:nth-child(7) > div > label > span').exists)
+            invoice_upload = browser.find_element(By.CSS_SELECTOR, "input[name='PDF']")
+            # invoice_upload.send_keys(r'C:\Users\whama\OneDrive\proj\Python\main\reboque_script\reboque_script\producao\jobs_csv\NFSe_00008376_13432007.pdf')
+            invoice_upload.send_keys(invoice_file)
+            # attach_file(invoice_file, to='Anexar arquivo')
+            # file_input_ele = S('#NFList > tbody > tr > td:nth-child(7) > div > label > span')
+            # file_input_ele.web_element.send_keys(invoice_file)
+            
+            #Save and complete the job
+            wait_until(S("i[class='icon icon-save color-edit save-note'").exists)
+            click(S("i[class='icon icon-save color-edit save-note'"))
+            time.sleep(3)
+            click(S("i[class='icon icon-save color-edit save-note'"))
+            wait_until(S("i[class='icon icon-pencil color-edit edit-note'").exists)
+            click('Clique aqui para finalizar o envio da nota')
+            wait_until(S('#btnConcluir').exists, timeout_secs= 30)
+            click('Ok')
+            wait_until(S('body > div.modal > div.modal-center > div > div.modal-box-actions > button').exists)
+            click('Concluir')
+            
+            #Delete invoice
+            os.remove(invoice_file)
+
+            #stores completed jobs into a list
+            ss_check.append(job_cleared['ss'])
+            
+            freio += 1
+            
+            if freio >= 2:
+                
+                browser.quit()
+                
+                raise SystemExit  
+            
+        except (TimeoutException, LookupError):
             
             clear_ss.remove(job_cleared)
-            not_clear_ss.append(job_cleared)  
+            not_clear_ss.append(job_cleared) 
+            
+            continue
         
-        
-        #input job monetary value into it's field
-        get_driver().execute_script(f"arguments[0].value = {ss_value_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
-        get_driver().execute_script("""
-        arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
-        arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
-        """, S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
-        
-        #access email, get the 4 last digits from specific CNPJ and inputs it into the its field'
-        
-        print(f'Localizando e-mail com a nota ({ss})......')
-        
-        ss_filename = download_attachments(gmail, job_cleared['ss'], browser)
-        clear_cnpj = get_4_cnpj(ss_filename)
-        get_driver().execute_script(f"arguments[0].value = {clear_cnpj[0]}", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
-        get_driver().execute_script("""
-        arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
-        arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
-        """, S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
-        
-        #input reboque company cnpj into its field
-        get_driver().execute_script(f"arguments[0].value = {reboque_cnpj}", S('#cnpj-emissor').web_element)
-        get_driver().execute_script("""
-        arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
-        arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
-        """, S('#cnpj-emissor').web_element)
-        
-        #input invoice number into its field and iterate it
-        write(invoice_number, into=S('#NFList > tbody > tr > td:nth-child(4) > div > input'))
-        invoice_number += 1
-        
-        #input today date into its field
-        write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
-        
-        #get invoice from nota carioca
-        invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
-        
-        print(f'Ainda preenchendo o Localiza ({ss})......')
-        
-        #Feed invoice to localiza
-        browser.switch_to.window(localiza_browser_tab)
-        wait_until(S('#NFList > tbody > tr > td:nth-child(7) > div > label > span').exists)
-        invoice_upload = browser.find_element(By.CSS_SELECTOR, "input[name='PDF']")
-        # invoice_upload.send_keys(r'C:\Users\whama\OneDrive\proj\Python\main\reboque_script\reboque_script\producao\jobs_csv\NFSe_00008376_13432007.pdf')
-        invoice_upload.send_keys(invoice_file)
-        # attach_file(invoice_file, to='Anexar arquivo')
-        # file_input_ele = S('#NFList > tbody > tr > td:nth-child(7) > div > label > span')
-        # file_input_ele.web_element.send_keys(invoice_file)
-        
-        #Save and complete the job
-        wait_until(S("i[class='icon icon-save color-edit save-note'").exists)
-        click(S("i[class='icon icon-save color-edit save-note'"))
-        time.sleep(3)
-        click(S("i[class='icon icon-save color-edit save-note'"))
-        wait_until(S("i[class='icon icon-pencil color-edit edit-note'").exists)
-        #TODO did not find element v
-        click('Clique aqui para finalizar o envio da nota')
-        wait_until(S('#btnConcluir').exists, timeout_secs= 30)
-        click('Ok')
-        wait_until(S('body > div.modal > div.modal-center > div > div.modal-box-actions > button').exists)
-        click('Concluir')
-        
-        #Delete invoice
-        os.remove(invoice_file)
-
-        #stores completed jobs into a list
-        ss_check.append(job_cleared['ss'])
-        
-        break  
-    
     #save completed jobs into a file
-    with open('producao\jobs_csv\verificacao.txt', 'w') as file:
+    with open(f"producao\\jobs_csv\\verificacao_clear.txt", "w") as file:
         
-        file.write(ss_check)
+        for linha in ss_check:
+            
+            file.write(f'{str(invoice_number)}: {str(linha)} \n')
+            
+    with open(f"producao\\jobs_csv\\verificacao_not_clear.txt", "w") as file:
+        
+        for linha in not_clear_ss:
+            
+            file.write(f'{str(invoice_number)}: {str(linha)} \n')
         
     browser.quit()
     
@@ -623,7 +652,7 @@ def download_attachments(gmail, ss: str, browser) -> str:
           
 #extract the last four digits from the specific CNPJ   
 def get_4_cnpj(filename) -> str:
-    #TODO SS_2NICNZ_30 not getting last 4 digits, gets first 4 instead. 
+    
     cnpj_pdf = fitz.open(f"producao\jobs_csv\ss_pdf\{filename}")
     
     for page_num, page in enumerate(cnpj_pdf):
