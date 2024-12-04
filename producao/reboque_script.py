@@ -323,8 +323,6 @@ def jobs_localiza_autem():
             
             #Autem: fill invoice number into autem
             browser.switch_to.window(autem_browser_tab)
-            refresh()
-            wait_until(S('body > main > section > div > div.grid-group > table > tbody > tr:nth-child(1)').exists)
             click(job_cleared['ss'])
             wait_until(S('#servico_editar_assistencia').exists)
 
@@ -336,6 +334,8 @@ def jobs_localiza_autem():
             
             print(f'Preenchendo dados do serviço no Localiza ({ss})......')
             browser.switch_to.window(localiza_browser_tab)
+            refresh()
+            wait_until(S('body > main > section > div > div.grid-group > table > tbody > tr:nth-child(1)').exists)
             
             #convert and format the SS's float monetary value to string so Localiza can read it properly
             ss_value_number = '{:.2f}'.format(job_cleared['faturamento']).replace('.', '')
@@ -349,8 +349,10 @@ def jobs_localiza_autem():
             
             except TimeoutException:
                 
+                print('Erro saída carregamento Localiza.')
                 clear_ss.remove(job_cleared)
                 not_clear_ss.append(job_cleared)
+                print(f'{job_cleared} falhou')
                 
                 continue 
             
@@ -432,8 +434,10 @@ def jobs_localiza_autem():
             
         except (TimeoutException, LookupError):
             
+            print('Erro saída geral.')
             clear_ss.remove(job_cleared)
-            not_clear_ss.append(job_cleared) 
+            not_clear_ss.append(job_cleared)
+            print(f'{job_cleared} falhou')
             
             continue
         
