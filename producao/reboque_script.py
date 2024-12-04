@@ -516,7 +516,7 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     click(S('#ctl00_cphBase_btVoltar'))
     
     #manages file
-    #TODO; ajust path: correct is the same as default
+    #TODO; ajust path: correct is the same as default; or just ask user to not have any invoice in his default download folder
     # default_path = os.path.join(user_download_dir, invoice_file[0])
     # corrected_nota_file_path = os.path.join(jobs_file_path, invoice_file[0])
     # os.replace(default_path, corrected_nota_file_path)
