@@ -262,6 +262,7 @@ def jobs_localiza_autem():
     #this is done so the file is not renamed to "...(1)". The files will always be copied-over updated.
     #also waits the download to finish
     #dl dir is default chrome download. The file is moved back to the project's folder.
+    #TODO autem file is being misplaced
     wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples').exists)
     
     if os.path.exists(autem_jobs_file):
@@ -313,24 +314,11 @@ def jobs_localiza_autem():
         
             ss = job_cleared['ss']
             
-            print(f'Preenchendo dados do serviço no Autem ({ss})......')
-            
             #Autem: verify if job is cleared through Autem (the last column's color indicator must be green)
             #if the job is red, it must be reassigned from 'clear_ss' to the 'not_clear_ss' list
             #TODO
             # clear_ss.remove(job_cleared)
-            # not_clear_ss.append[job_cleared]  
-            
-            #Autem: fill invoice number into autem
-            browser.switch_to.window(autem_browser_tab)
-            click(job_cleared['ss'])
-            wait_until(S('#servico_editar_assistencia').exists)
-
-            write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
-            click('Salvar')
-            wait_until(S('#bt-negative').exists)
-            click(S('#bt-negative'))
-            get_driver().close()
+            # not_clear_ss.append[job_cleared]
             
             print(f'Preenchendo dados do serviço no Localiza ({ss})......')
             browser.switch_to.window(localiza_browser_tab)
@@ -353,7 +341,7 @@ def jobs_localiza_autem():
                 clear_ss.remove(job_cleared)
                 not_clear_ss.append(job_cleared)
                 print(f'{job_cleared} falhou')
-                
+                invoice_number += 1
                 continue 
             
             
@@ -371,7 +359,8 @@ def jobs_localiza_autem():
             #TODO ignore the '-' coming from the last 4 cnpj number (01-08), maybe not the problem
             ss_filename = download_attachments(gmail, job_cleared['ss'], browser)
             clear_cnpj = get_4_cnpj(ss_filename)
-            get_driver().execute_script(f"arguments[0].value = {clear_cnpj[0]}", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element)
+            clear_cnpj_str = str(clear_cnpj[0])
+            get_driver().execute_script("arguments[0].value = arguments[1]", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element, str(clear_cnpj_str))
             get_driver().execute_script("""
             arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
             arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
@@ -386,13 +375,26 @@ def jobs_localiza_autem():
             
             #input invoice number into its field and iterate it
             write(invoice_number, into=S('#NFList > tbody > tr > td:nth-child(4) > div > input'))
-            invoice_number += 1
+            
             
             #input today date into its field
             write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
             
             #get invoice from nota carioca
             invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
+            
+            print(f'Preenchendo dados do serviço no Autem ({ss})......')
+              
+            #Autem: fill invoice number into autem
+            browser.switch_to.window(autem_browser_tab)
+            click(job_cleared['ss'])
+            wait_until(S('#servico_editar_assistencia').exists)
+
+            write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
+            click('Salvar')
+            wait_until(S('#bt-negative').exists)
+            click(S('#bt-negative'))
+            get_driver().close()
             
             print(f'Ainda preenchendo o Localiza ({ss})......')
             
@@ -426,11 +428,14 @@ def jobs_localiza_autem():
             
             freio += 1
             
+            #iterate invoice number
+            invoice_number += 1
+            
             if freio >= 2:
                 
                 browser.quit()
                 
-                raise SystemExit  
+                break 
             
         except (TimeoutException, LookupError):
             
@@ -438,7 +443,7 @@ def jobs_localiza_autem():
             clear_ss.remove(job_cleared)
             not_clear_ss.append(job_cleared)
             print(f'{job_cleared} falhou')
-            
+            invoice_number += 1
             continue
         
     #save completed jobs into a file
@@ -466,6 +471,7 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     
     #switch tabs
     browser.switch_to.window(nota_browser_tab)
+    go_to('https://notacarioca.rio.gov.br/contribuinte/nota.aspx')
     
     #get the full specific cnpj
     _, full_cnpj = get_4_cnpj(ss_filename)
