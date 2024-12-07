@@ -262,7 +262,6 @@ def jobs_localiza_autem():
     #this is done so the file is not renamed to "...(1)". The files will always be copied-over updated.
     #also waits the download to finish
     #dl dir is default chrome download. The file is moved back to the project's folder.
-    #TODO autem file is being misplaced
     wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples').exists)
     
     if os.path.exists(autem_jobs_file):
@@ -307,7 +306,8 @@ def jobs_localiza_autem():
     ss_check = []
     
     freio = 0
-        
+    
+    #TODO ajust invoice_number logic
     for job_cleared in clear_ss:
         
         try:
