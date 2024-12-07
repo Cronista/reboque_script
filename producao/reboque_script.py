@@ -101,7 +101,7 @@ def jobs_localiza_autem():
     
     """
     options.add_argument(f'--user-data-dir={user_data_dir}')
-    options.add_argument("--profile-directory=Profile 1")
+    options.add_argument("--profile-directory=Profile 2")
     
     """
     must be changed according to PC
@@ -272,7 +272,7 @@ def jobs_localiza_autem():
     while os.path.exists(autem_jobs_file) == False:
         
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
-        time.sleep(3)
+        time.sleep(1)
     
     corrected_autem_jobs_file = os.path.join(jobs_file_path, 'exportGrid_AutEM_xls.xlsx') 
     
@@ -311,6 +311,9 @@ def jobs_localiza_autem():
     for job_cleared in clear_ss:
         
         try:
+            
+            #as with every value that is inputted with js scripts, the events for 'change' and 'input' are being reset so it can
+            #wake the input field and add the commas, periods and such
         
             ss = job_cleared['ss']
             
@@ -356,9 +359,9 @@ def jobs_localiza_autem():
             
             print(f'Localizando e-mail com a nota ({ss})......')
             
-            #TODO ignore the '-' coming from the last 4 cnpj number (01-08), maybe not the problem
             ss_filename = download_attachments(gmail, job_cleared['ss'], browser)
             clear_cnpj = get_4_cnpj(ss_filename)
+            #transforms the last 4 digits into string so python or js doest read as an octal number
             clear_cnpj_str = str(clear_cnpj[0])
             get_driver().execute_script("arguments[0].value = arguments[1]", S('#NFList > tbody > tr > td:nth-child(9) > div > input').web_element, str(clear_cnpj_str))
             get_driver().execute_script("""
@@ -432,8 +435,6 @@ def jobs_localiza_autem():
             invoice_number += 1
             
             if freio >= 2:
-                
-                browser.quit()
                 
                 break 
             
