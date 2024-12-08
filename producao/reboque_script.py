@@ -428,11 +428,11 @@ def jobs_localiza_autem():
 
             #stores completed jobs into a list
             ss_check.append(job_cleared['ss'])
-            
-            freio += 1
-            
+        
             #iterate invoice number
             invoice_number += 1
+            
+            freio += 1
             
             if freio >= 2:
                 
@@ -444,7 +444,6 @@ def jobs_localiza_autem():
             clear_ss.remove(job_cleared)
             not_clear_ss.append(job_cleared)
             print(f'{job_cleared} falhou')
-            invoice_number += 1
             continue
         
     #save completed jobs into a file
