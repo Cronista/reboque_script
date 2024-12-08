@@ -271,7 +271,7 @@ def jobs_localiza_autem():
     while os.path.exists(autem_jobs_file) == False:
         
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
-        time.sleep(1)
+        time.sleep(3)
     
     corrected_autem_jobs_file = os.path.join(jobs_file_path, 'exportGrid_AutEM_xls.xlsx') 
     
@@ -336,7 +336,7 @@ def jobs_localiza_autem():
             
             try:
                 
-                wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
+                wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists, timeout_secs=30)
             
             except TimeoutException:
                 
@@ -412,15 +412,15 @@ def jobs_localiza_autem():
             # file_input_ele.web_element.send_keys(invoice_file)
             
             #Save and complete the job
-            wait_until(S("i[class='icon icon-save color-edit save-note'").exists)
+            wait_until(S("i[class='icon icon-save color-edit save-note'").exists, timeout_secs=30)
             click(S("i[class='icon icon-save color-edit save-note'"))
             time.sleep(3)
             click(S("i[class='icon icon-save color-edit save-note'"))
-            wait_until(S("i[class='icon icon-pencil color-edit edit-note'").exists)
+            wait_until(S("i[class='icon icon-pencil color-edit edit-note'").exists, timeout_secs=30)
             click('Clique aqui para finalizar o envio da nota')
             wait_until(S('#btnConcluir').exists, timeout_secs= 30)
             click('Ok')
-            wait_until(S('body > div.modal > div.modal-center > div > div.modal-box-actions > button').exists)
+            wait_until(S('body > div.modal > div.modal-center > div > div.modal-box-actions > button').exists, timeout_secs=30)
             click('Concluir')
             
             #Delete invoice
@@ -428,7 +428,20 @@ def jobs_localiza_autem():
 
             #stores completed jobs into a list
             ss_check.append(job_cleared['ss'])
-        
+             
+            #save completed jobs into a file
+            with open(f"producao\\jobs_csv\\verificacao_clear.txt", "w") as file:
+                
+                for linha in ss_check:
+                    
+                    file.write(f'{str(invoice_number)}: {str(linha)} \n')
+                    
+            with open(f"producao\\jobs_csv\\verificacao_not_clear.txt", "w") as file:
+                
+                for linha in not_clear_ss:
+                    
+                    file.write(f'{str(invoice_number)}: {str(linha)} \n')
+                    
             #iterate invoice number
             invoice_number += 1
             
@@ -443,21 +456,21 @@ def jobs_localiza_autem():
             print('Erro saída geral.')
             clear_ss.remove(job_cleared)
             not_clear_ss.append(job_cleared)
-            print(f'{job_cleared} falhou')
+            print(f'{invoice_number}: {job_cleared} falhou')
             continue
         
-    #save completed jobs into a file
-    with open(f"producao\\jobs_csv\\verificacao_clear.txt", "w") as file:
+    # #save completed jobs into a file
+    # with open(f"producao\\jobs_csv\\verificacao_clear.txt", "w") as file:
         
-        for linha in ss_check:
+    #     for linha in ss_check:
             
-            file.write(f'{str(invoice_number)}: {str(linha)} \n')
+    #         file.write(f'{str(invoice_number)}: {str(linha)} \n')
             
-    with open(f"producao\\jobs_csv\\verificacao_not_clear.txt", "w") as file:
+    # with open(f"producao\\jobs_csv\\verificacao_not_clear.txt", "w") as file:
         
-        for linha in not_clear_ss:
+    #     for linha in not_clear_ss:
             
-            file.write(f'{str(invoice_number)}: {str(linha)} \n')
+    #         file.write(f'{str(invoice_number)}: {str(linha)} \n')
         
     browser.quit()
     
@@ -578,7 +591,10 @@ def jobs_pandas():
 
     #dataframe comparing localiza and autem jobs lists
     merge_localiza_autem = pd.merge(df_localiza, df_autem, on='ss', how='left')
-
+    
+    print(df_autem)
+    print(df_localiza)
+    print(merge_localiza_autem)
     #Compare ss to value and save the results to two lists of dictionaries. Clear and not clear to continue
     for index_merge in range(len(merge_localiza_autem)):
     
