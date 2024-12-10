@@ -164,6 +164,7 @@ def jobs_localiza_autem():
     #list to store each job dictionary
     job_list_localiza = []
     
+    #TODO extract more localiza SS jobs
     #loop to extract jobs
     for job in job_table_localiza:
         
@@ -325,7 +326,6 @@ def jobs_localiza_autem():
             
             print(f'Preenchendo dados do serviço no Localiza ({ss})......')
             browser.switch_to.window(localiza_browser_tab)
-            refresh()
             wait_until(S('body > main > section > div > div.grid-group > table > tbody > tr:nth-child(1)').exists)
             
             #convert and format the SS's float monetary value to string so Localiza can read it properly
@@ -336,15 +336,23 @@ def jobs_localiza_autem():
             
             try:
                 
-                wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists, timeout_secs=30)
+                wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
             
             except TimeoutException:
                 
                 print('Erro saída carregamento Localiza.')
                 clear_ss.remove(job_cleared)
                 not_clear_ss.append(job_cleared)
-                print(f'{job_cleared} falhou')
-                invoice_number += 1
+                print(f'{invoice_number}: {job_cleared} falhou')
+                refresh()
+                
+                #save not clear jobs into a file
+                with open(f"producao\\jobs_csv\\verificacao_not_clear_{timestamp}.txt", "w") as file:
+                    
+                    for linha in not_clear_ss:
+                        
+                        file.write(f'{str(invoice_number)}: {str(linha)} \n')
+                        
                 continue 
             
             
@@ -376,9 +384,8 @@ def jobs_localiza_autem():
             arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
             """, S('#cnpj-emissor').web_element)
             
-            #input invoice number into its field and iterate it
+            #input invoice number into its field
             write(invoice_number, into=S('#NFList > tbody > tr > td:nth-child(4) > div > input'))
-            
             
             #input today date into its field
             write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
@@ -429,16 +436,10 @@ def jobs_localiza_autem():
             #stores completed jobs into a list
             ss_check.append(job_cleared['ss'])
              
-            #save completed jobs into a file
-            with open(f"producao\\jobs_csv\\verificacao_clear.txt", "w") as file:
+            #save completed clear jobs into a file
+            with open(f"producao\\jobs_csv\\verificacao_clear_{timestamp}.txt", "w") as file:
                 
                 for linha in ss_check:
-                    
-                    file.write(f'{str(invoice_number)}: {str(linha)} \n')
-                    
-            with open(f"producao\\jobs_csv\\verificacao_not_clear.txt", "w") as file:
-                
-                for linha in not_clear_ss:
                     
                     file.write(f'{str(invoice_number)}: {str(linha)} \n')
                     
@@ -457,21 +458,20 @@ def jobs_localiza_autem():
             clear_ss.remove(job_cleared)
             not_clear_ss.append(job_cleared)
             print(f'{invoice_number}: {job_cleared} falhou')
+            
+            with open(f"producao\\jobs_csv\\verificacao_not_clear_{timestamp}.txt", "w") as file:
+                
+                for linha in not_clear_ss:
+                    
+                    file.write(f'{str(invoice_number)}: {str(linha)} \n')
+                    
             continue
         
-    # #save completed jobs into a file
-    # with open(f"producao\\jobs_csv\\verificacao_clear.txt", "w") as file:
+    while len(browser.window_handles) > 1:
         
-    #     for linha in ss_check:
-            
-    #         file.write(f'{str(invoice_number)}: {str(linha)} \n')
-            
-    # with open(f"producao\\jobs_csv\\verificacao_not_clear.txt", "w") as file:
-        
-    #     for linha in not_clear_ss:
-            
-    #         file.write(f'{str(invoice_number)}: {str(linha)} \n')
-        
+        browser.switch_to.window(browser.window_handles[-1])
+        browser.close() 
+    
     browser.quit()
     
 def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_browser_tab):
@@ -493,7 +493,7 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     
     try:
         
-        wait_until(S('#ctl00_cphCabMenu_tbCPFCNPJTomador').exists)
+        wait_until(S('#ctl00_cphCabMenu_tbCPFCNPJTomador').exists, timeout_secs=30)
         
     except TimeoutException:
         
@@ -508,8 +508,13 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     write(full_cnpj, into=S('#ctl00_cphCabMenu_tbCPFCNPJTomador'))
     click('AVANÇAR >>')
     
+    if full_cnpj == '16670085016663':
+        
+        click('0.395.135-9 - LOCALIZA RENT A CAR SA (Filial)')
+        click('AVANÇAR >>')
+    
     #fill in required info into fields
-    wait_until(S('#ctl00_cphCabMenu_tbDiscriminacao').exists)
+    wait_until(S('#ctl00_cphCabMenu_tbDiscriminacao').exists, timeout_secs=30)
     
     write(ss, into=S('#ctl00_cphCabMenu_tbDiscriminacao'))
     write(ss_value, into=S('#ctl00_cphCabMenu_tbValor'))
@@ -592,9 +597,6 @@ def jobs_pandas():
     #dataframe comparing localiza and autem jobs lists
     merge_localiza_autem = pd.merge(df_localiza, df_autem, on='ss', how='left')
     
-    print(df_autem)
-    print(df_localiza)
-    print(merge_localiza_autem)
     #Compare ss to value and save the results to two lists of dictionaries. Clear and not clear to continue
     for index_merge in range(len(merge_localiza_autem)):
     
