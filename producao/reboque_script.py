@@ -4,7 +4,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-import csv, os, time, fitz, glob
+import csv, os, time, fitz, glob, json
 import pandas as pd
 import numpy as np
 import pygetwindow as gw
@@ -64,9 +64,7 @@ def jobs_localiza_autem():
         
         except (TypeError, ValueError):
             
-            print('Número inválido.\nPressione Enter para tentar novamente.')
-            input()
-            invoice_number = -1
+            print('Número inválido.')
 
     #set file paths
     jobs_file_path = os.path.join(os.getcwd(), 'producao', 'jobs_csv')
@@ -143,52 +141,65 @@ def jobs_localiza_autem():
     #     None 
     
     #wait until the jobs table is loaded
-    try:
-        wait_until(S('tbody').exists)
-        
-    except TimeoutException:
-        
-        print('Não foi possível conectar-se ao Localiza.')
-        input('Enter para sair.')
-
-        browser.quit()
-        
-        raise SystemExit
-
-    print('Varrendo Localiza......')
-    
-    #create a soup element to more easily manipulate the loaded page's HTML elements, compared to pure Helium
-    soup = BeautifulSoup(browser.page_source, 'html.parser')
-    job_table_localiza = soup.find('tbody')
-
     #list to store each job dictionary
     job_list_localiza = []
     
     #TODO extract more localiza SS jobs
-    #loop to extract jobs
-    for job in job_table_localiza:
+    #loop to go through pages of localiza jobs
+    for loca_page_index in range(11):
         
-        #try:except to go over unwanted elements such as empty lines
+        #conditional to click or not into the next page. If it is the first page, it wont.
+        if loca_page_index == 0:
+            
+            None
+            
+        else:
+            
+            click(S('body > main > section > div > div.grid-header-container > div.grid-header-options > div.grid-options > div.paginacao-container > i.icon.icon-angle-right.active'))
+        
+        #main scraping loop start
         try:
+            wait_until(S('tbody').exists)
             
-            job_dict = {
-                
-                'ss': job.find('td', {'class': 'localiza-o'}).find('span').text.strip(),
-                'placa': job.select_one('td:nth-of-type(3)').text.strip(),
-                'conclusao': job.select_one('td:nth-of-type(4)').text.strip(),
-                'cnpj_fornecedor': job.select_one('td:nth-of-type(5)').text.strip(),
-                'faturamento': job.select_one('td:nth-of-type(7)').text.strip(),
-                'notas_anexadas': job.select_one('td:nth-of-type(8)').text.strip(),
-                'forma_de_pagamento': job.select_one('td:nth-of-type(9)').text.strip(),
-                        
-            }
-                
-                
-            job_list_localiza.append(job_dict)
+        except TimeoutException:
             
-        except (AttributeError, TypeError) as e:
-            continue
+            print('Não foi possível conectar-se ao Localiza. -Página de jobs-')
+            input('Enter para sair.')
+
+            browser.quit()
+            
+            raise SystemExit
+
+        print(f'Varrendo Localiza página {loca_page_index}......')
         
+        #create a soup element to more easily manipulate the loaded page's HTML elements, compared to pure Helium
+        soup = BeautifulSoup(browser.page_source, 'html.parser')
+        job_table_localiza = soup.find('tbody')
+        
+        #loop to extract jobs
+        for job in job_table_localiza:
+            
+            #try:except to go over unwanted elements such as empty lines
+            try:
+                
+                job_dict = {
+                    
+                    'ss': job.find('td', {'class': 'localiza-o'}).find('span').text.strip(),
+                    'placa': job.select_one('td:nth-of-type(3)').text.strip(),
+                    'conclusao': job.select_one('td:nth-of-type(4)').text.strip(),
+                    'cnpj_fornecedor': job.select_one('td:nth-of-type(5)').text.strip(),
+                    'faturamento': job.select_one('td:nth-of-type(7)').text.strip(),
+                    'notas_anexadas': job.select_one('td:nth-of-type(8)').text.strip(),
+                    'forma_de_pagamento': job.select_one('td:nth-of-type(9)').text.strip(),
+                            
+                }
+                    
+                    
+                job_list_localiza.append(job_dict)
+                
+            except (AttributeError, TypeError):
+                continue
+
     #save to csv file
     headers = ['ss', 'placa', 'conclusao', 'cnpj_fornecedor', 'faturamento', 'notas_anexadas', 'forma_de_pagamento']
                
@@ -243,6 +254,7 @@ def jobs_localiza_autem():
         raise SystemExit
     
     click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
+    click('PROCURAR')
     
     try:
     
@@ -326,6 +338,20 @@ def jobs_localiza_autem():
             
             print(f'Preenchendo dados do serviço no Localiza ({ss})......')
             browser.switch_to.window(localiza_browser_tab)
+            # wait_until(S('body > main > section > div > div.grid-group > table > tbody > tr:nth-child(1)').exists)
+            wait_until(S('#SearchBox').exists)
+
+            #search for the SS before clicking on it
+            try:
+                
+                write(job_cleared['ss'], into=S('#SearchBox'))
+                
+            except NoSuchElementException:
+                
+                time.sleep(1)
+                wait_until(S('#SearchBox').exists)
+                
+            click(S('body > main > section > div > div.grid-header-container > div.grid-header-options > div.tools > div.search-box.tool-item > label > i'))
             wait_until(S('body > main > section > div > div.grid-group > table > tbody > tr:nth-child(1)').exists)
             
             #convert and format the SS's float monetary value to string so Localiza can read it properly
@@ -336,7 +362,7 @@ def jobs_localiza_autem():
             
             try:
                 
-                wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists)
+                wait_until(S('#NFList > tbody > tr > td:nth-child(6) > div > input').exists, timeout_secs=5)
             
             except TimeoutException:
                 
@@ -434,21 +460,23 @@ def jobs_localiza_autem():
             os.remove(invoice_file)
 
             #stores completed jobs into a list
-            ss_check.append(job_cleared['ss'])
+            ss_check.append(f'{invoice_number}: {job_cleared["ss"]}')
              
             #save completed clear jobs into a file
             with open(f"producao\\jobs_csv\\verificacao_clear_{timestamp}.txt", "w") as file:
                 
                 for linha in ss_check:
                     
-                    file.write(f'{str(invoice_number)}: {str(linha)} \n')
-                    
+                    file.write(f'{str(linha)} \n')
+
+            print(f'{invoice_number}: {ss} envio bem sucedido!')    
+              
             #iterate invoice number
             invoice_number += 1
             
             freio += 1
             
-            if freio >= 2:
+            if freio >= 3:
                 
                 break 
             
@@ -471,7 +499,7 @@ def jobs_localiza_autem():
         
         browser.switch_to.window(browser.window_handles[-1])
         browser.close() 
-    
+        
     browser.quit()
     
 def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_browser_tab):
