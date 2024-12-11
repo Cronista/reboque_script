@@ -476,7 +476,7 @@ def jobs_localiza_autem():
             
             freio += 1
             
-            if freio >= 3:
+            if freio >= 5:
                 
                 break 
             
