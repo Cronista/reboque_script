@@ -429,7 +429,16 @@ def jobs_localiza_autem():
             write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
             click('Salvar')
             wait_until(S('#bt-negative').exists)
-            click(S('#bt-negative'))
+            
+            #treat for incorrect address warning
+            address_element_bt = S('#bt-positive')
+            if 'CONTINUAR...' in address_element_bt.web_element.text:
+                
+                click('#bt-positive')
+                wait_until(S('#bt-negative').exists)
+                click(S('#bt-negative'))  
+    
+            click(S('#bt-negative'))    
             get_driver().close()
             
             print(f'Ainda preenchendo o Localiza ({ss})......')
@@ -460,7 +469,7 @@ def jobs_localiza_autem():
             os.remove(invoice_file)
 
             #stores completed jobs into a list
-            ss_check.append(f'{invoice_number}: {job_cleared["ss"]}')
+            ss_check.append(f'{job_cleared["ss"]} {job_cleared["faturamento"]} {invoice_number}')
              
             #save completed clear jobs into a file
             with open(f"producao\\jobs_csv\\verificacao_clear_{timestamp}.txt", "w") as file:
@@ -476,7 +485,7 @@ def jobs_localiza_autem():
             
             freio += 1
             
-            if freio >= 5:
+            if freio >= 10:
                 
                 break 
             
