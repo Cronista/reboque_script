@@ -65,6 +65,19 @@ def jobs_localiza_autem():
         except (TypeError, ValueError):
             
             print('Número inválido.')
+            
+    freio = -1
+    while freio < 0:
+        
+        try:
+            
+            print('Insira um número de notas a serem feitas')
+            freio = int(input())
+            os.system('cls')
+        
+        except (TypeError, ValueError):
+            
+            print('Número inválido.')
 
     #set file paths
     jobs_file_path = os.path.join(os.getcwd(), 'producao', 'jobs_csv')
@@ -286,7 +299,7 @@ def jobs_localiza_autem():
     while os.path.exists(autem_jobs_file) == False:
         
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples'))
-        time.sleep(3)
+        time.sleep(5)
     
     corrected_autem_jobs_file = os.path.join(jobs_file_path, 'exportGrid_AutEM_xls.xlsx') 
     
@@ -320,7 +333,7 @@ def jobs_localiza_autem():
     
     ss_check = []
     
-    freio = 0
+    freio_loop = 0
     
     #TODO ajust invoice_number logic
     for job_cleared in clear_ss:
@@ -370,17 +383,17 @@ def jobs_localiza_autem():
             except TimeoutException:
                 
                 print('Erro saída carregamento Localiza.')
-                clear_ss.remove(job_cleared)
-                not_clear_ss.append(job_cleared)
+                # clear_ss.remove(job_cleared)
+                # not_clear_ss.append(job_cleared)
                 print(f'{invoice_number}: {job_cleared} falhou')
                 refresh()
                 
-                #save not clear jobs into a file
-                with open(f"producao\\jobs_csv\\verificacao_not_clear_{timestamp}.txt", "w") as file:
+                # #save not clear jobs into a file
+                # with open(f"producao\\jobs_csv\\verificacao_not_clear_{timestamp}.txt", "w") as file:
                     
-                    for linha in not_clear_ss:
+                #     for linha in not_clear_ss:
                         
-                        file.write(f'{str(invoice_number)}: {str(linha)} \n')
+                #         file.write(f'{str(invoice_number)}: {str(linha)} \n')
                         
                 continue 
             
@@ -486,9 +499,9 @@ def jobs_localiza_autem():
             #iterate invoice number
             invoice_number += 1
             
-            freio += 1
+            freio_loop += 1
             
-            if freio >= 10:
+            if freio_loop >= freio:
                 
                 break 
             
