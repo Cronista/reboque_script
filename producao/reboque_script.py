@@ -253,8 +253,9 @@ def jobs_localiza_autem():
         browser.quit()
         raise SystemExit
     
+    wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)
     click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
-    click('PROCURAR')
+    # click('PROCURAR')
     
     try:
     
@@ -269,6 +270,7 @@ def jobs_localiza_autem():
     
     get_driver().execute_script("arguments[0].value = ''", S('#filtro_de').web_element)
     write(timestamp_autem_filter, into=S('#filtro_de'))
+    wait_until(S('#btn_filtrar').exists)
     click(S('#btn_filtrar'))
     
     #wait until the export button is loaded, delete current file in the directory and click the download (export) button
@@ -350,6 +352,7 @@ def jobs_localiza_autem():
                 
                 time.sleep(1)
                 wait_until(S('#SearchBox').exists)
+                write(job_cleared['ss'], into=S('#SearchBox'))
                 
             click(S('body > main > section > div > div.grid-header-container > div.grid-header-options > div.tools > div.search-box.tool-item > label > i'))
             wait_until(S('body > main > section > div > div.grid-group > table > tbody > tr:nth-child(1)').exists)
