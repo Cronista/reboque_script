@@ -48,6 +48,7 @@ Edit before use. Specifc to PC.
 """
 #set up secured constants
 reboque_cnpj = os.environ['REBOQUE_CNPJ']
+reboque_empresa_autem = os.environ['REBOQUE_EMPRESA_AUTEM']
 
 ##Localiza, Autem
 #get jobs from localiza and autem
@@ -281,7 +282,10 @@ def jobs_localiza_autem():
         browser.quit()
         raise SystemExit
     
+    #TODO verify fix for better autem scrape
     get_driver().execute_script("arguments[0].value = ''", S('#filtro_de').web_element)
+    wait_until(S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > button > div').exists)
+    write(reboque_empresa_autem, into=S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > button > div'))
     write(timestamp_autem_filter, into=S('#filtro_de'))
     wait_until(S('#btn_filtrar').exists)
     click(S('#btn_filtrar'))
@@ -650,6 +654,11 @@ def jobs_pandas():
     #dataframe comparing localiza and autem jobs lists
     merge_localiza_autem = pd.merge(df_localiza, df_autem, on='ss', how='left')
     
+    print(df_autem)
+    print(df_localiza)
+    print(merge_localiza_autem)
+    
+    #TODO use placa as merge factor; compare placas
     #Compare ss to value and save the results to two lists of dictionaries. Clear and not clear to continue
     for index_merge in range(len(merge_localiza_autem)):
     
