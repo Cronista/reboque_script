@@ -285,8 +285,10 @@ def jobs_localiza_autem():
     #TODO verify fix for better autem scrape
     get_driver().execute_script("arguments[0].value = ''", S('#filtro_de').web_element)
     wait_until(S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > button > div').exists)
-    write(reboque_empresa_autem, into=S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > button > div'))
     write(timestamp_autem_filter, into=S('#filtro_de'))
+    click(S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > button'))
+    wait_until(S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > div > div.bs-searchbox > input').exists)
+    click(reboque_empresa_autem)
     wait_until(S('#btn_filtrar').exists)
     click(S('#btn_filtrar'))
     
@@ -294,7 +296,7 @@ def jobs_localiza_autem():
     #this is done so the file is not renamed to "...(1)". The files will always be copied-over updated.
     #also waits the download to finish
     #dl dir is default chrome download. The file is moved back to the project's folder.
-    wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples').exists)
+    wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.buttons-excel.buttons-html5.btn-icon-o.btn-light.ti-export.waves-effects.perm-simples').exists, timeout_secs=30)
     
     if os.path.exists(autem_jobs_file):
         
@@ -437,14 +439,16 @@ def jobs_localiza_autem():
             write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
             
             #get invoice from nota carioca
-            invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
+            invoice_file, invoice_file_number = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
             
             print(f'Preenchendo dados do serviço no Autem ({ss})......')
               
             #Autem: fill invoice number into autem
             browser.switch_to.window(autem_browser_tab)
-            click(job_cleared['ss'])
-            wait_until(S('#servico_editar_assistencia').exists)
+            wait_until(S('#datatable_servicos > tbody').exists)
+            print(job_cleared['ss_pre'])
+            click(job_cleared['ss_pre'])
+            wait_until(S('#servico_editar_assistencia').exists, timeout_secs=30)
 
             write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
             click('Salvar')
@@ -454,6 +458,7 @@ def jobs_localiza_autem():
             address_element_bt = S('#bt-positive')
             if 'CONTINUAR...' in address_element_bt.web_element.text:
                 
+                wait_until(S('#bt-positive').exists)
                 click('#bt-positive')
                 wait_until(S('#bt-negative').exists)
                 click(S('#bt-negative'))  
@@ -473,6 +478,14 @@ def jobs_localiza_autem():
             # file_input_ele = S('#NFList > tbody > tr > td:nth-child(7) > div > label > span')
             # file_input_ele.web_element.send_keys(invoice_file)
             
+            #check if invoice number matchs the actual document
+            if invoice_number != invoice_file_number:
+                
+                print(f'Número da nota não é igual!')
+                print(f'{invoice_number}: {job_cleared} falhou')
+                
+                break
+            
             #Save and complete the job
             wait_until(S("i[class='icon icon-save color-edit save-note'").exists, timeout_secs=30)
             click(S("i[class='icon icon-save color-edit save-note'"))
@@ -485,6 +498,7 @@ def jobs_localiza_autem():
             wait_until(S('body > div.modal > div.modal-center > div > div.modal-box-actions > button').exists, timeout_secs=30)
             click('Concluir')
             
+            #TODO delete more often 
             #Delete invoice
             os.remove(invoice_file)
 
@@ -499,7 +513,7 @@ def jobs_localiza_autem():
                     file.write(f'{str(linha)} \n')
 
             print(f'{invoice_number}: {ss} envio bem sucedido!')    
-              
+            
             #iterate invoice number
             invoice_number += 1
             
@@ -588,6 +602,8 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     #locate file based on its partial file name
     invoice_file = glob.glob(f'{user_download_dir}/**/*NFSe_*.pdf', recursive=True)
     
+    invoice_file_number = int(os.path.basename(invoice_file[0])[9:13])
+    
     #waits until the file is downloaded
     while len(invoice_file) == 0:
         
@@ -602,7 +618,7 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     # corrected_nota_file_path = os.path.join(jobs_file_path, invoice_file[0])
     # os.replace(default_path, corrected_nota_file_path)
     
-    return invoice_file[0]
+    return invoice_file[0], invoice_file_number
     
 ##Pandas
 #Compare job lists
@@ -617,7 +633,7 @@ def jobs_pandas():
 
     #standardize data between dataframes
     #rename df_autem columns to match df_localiza
-    df_autem = df_autem.rename(columns= {'Protocolo': 'ss', 'Valor (R$)': 'faturamento', 'Data e Hora Finalizado': 'conclusao', 'CNPJ': 'cnpj_fornecedor', 'Placa': 'placa'})
+    df_autem = df_autem.rename(columns= {'Protocolo': 'ss_pre', 'Valor (R$)': 'faturamento', 'Data e Hora Finalizado': 'conclusao', 'CNPJ': 'cnpj_fornecedor', 'Placa': 'placa'})
 
     #format df_localiza 'faturamento' column
     df_localiza['faturamento'] = (df_localiza['faturamento']
@@ -647,28 +663,38 @@ def jobs_pandas():
         'notas_anexadas', 'forma_de_pagamento', 'cnpj_fornecedor', 'conclusao']
         , axis=1)
 
+    #add indexes
+    df_autem = df_autem.reset_index()
+    df_localiza = df_localiza.reset_index()
+    
+    #consider newly added prefixes (from change of company workflow/policy) in the autem df so the SS can be comparared properly
+    df_autem['ss'] = df_autem['ss_pre'].str[-9:]
+    
     #list of ss cleared and not cleared to continue
     clear_ss = []
     not_clear_ss = []
 
     #dataframe comparing localiza and autem jobs lists
-    merge_localiza_autem = pd.merge(df_localiza, df_autem, on='ss', how='left')
+    # merge_localiza_autem = pd.merge(df_localiza, df_autem, on='ss', how='left',)
+    merge_localiza_autem = pd.merge(df_localiza, df_autem, on='ss', how='inner', suffixes=('_loca', '_aut'))
     
-    print(df_autem)
-    print(df_localiza)
-    print(merge_localiza_autem)
+    # print(clear_ss)
+    # print(df_autem)
+    # print(df_localiza)
+    # print(merge_localiza_autem)
     
     #TODO use placa as merge factor; compare placas
     #Compare ss to value and save the results to two lists of dictionaries. Clear and not clear to continue
     for index_merge in range(len(merge_localiza_autem)):
     
         try:
-            if merge_localiza_autem['faturamento_x'][index_merge] >= merge_localiza_autem['faturamento_y'][index_merge]:
+            if merge_localiza_autem['faturamento_loca'][index_merge] >= merge_localiza_autem['faturamento_aut'][index_merge]:
                 
                 clear_ss_dict = {
                     
                     'ss': merge_localiza_autem['ss'][index_merge],
-                    'faturamento': merge_localiza_autem['faturamento_x'][index_merge],
+                    'faturamento': merge_localiza_autem['faturamento_loca'][index_merge],
+                    'ss_pre': merge_localiza_autem['ss_pre'][index_merge]
                 }
                 
                 clear_ss.append(clear_ss_dict)
@@ -677,30 +703,23 @@ def jobs_pandas():
                 not_clear_ss_dict = {
                     
                     'ss': merge_localiza_autem['ss'][index_merge],
-                    'faturamento': merge_localiza_autem['faturamento_x'][index_merge]
+                    'faturamento': merge_localiza_autem['faturamento_loca'][index_merge],
+                    'ss_pre': merge_localiza_autem['ss_pre'][index_merge]
                 }
                 
                 not_clear_ss.append(not_clear_ss_dict)
                 
-        except ValueError:
+        except (ValueError, TypeError):
             
              not_clear_ss_dict = {
                 
                 'ss': merge_localiza_autem['ss'][index_merge],
-                'faturamento': merge_localiza_autem['faturamento_x'][index_merge]
+                'faturamento': merge_localiza_autem['faturamento_loca'][index_merge],
+                'ss_pre': merge_localiza_autem['ss_pre'][index_merge]
              }
              
              not_clear_ss.append(not_clear_ss_dict)
              
-        except TypeError:
-            
-             not_clear_ss_dict = {
-                
-                'ss': merge_localiza_autem['ss'][index_merge],
-                'faturamento': merge_localiza_autem['faturamento_x'][index_merge]
-             }
-             
-             not_clear_ss.append(not_clear_ss_dict)
                    
     return clear_ss, not_clear_ss
 
