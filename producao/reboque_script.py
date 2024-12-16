@@ -391,7 +391,7 @@ def jobs_localiza_autem():
                 print('Erro saída carregamento Localiza.')
                 # clear_ss.remove(job_cleared)
                 # not_clear_ss.append(job_cleared)
-                print(f'{invoice_number}: {job_cleared} falhou')
+                print(f'{invoice_number}: {job_cleared} falhou \n')
                 refresh()
                 
                 # #save not clear jobs into a file
