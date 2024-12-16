@@ -262,7 +262,7 @@ def jobs_localiza_autem():
         
     except TimeoutException:
 
-        print('Não foi possível conectar-se ao Autem.')
+        print('Não foi possível conectar-se ao Autem. Tente novamente.')
         input('Enter para sair.')
         browser.quit()
         raise SystemExit
@@ -277,7 +277,7 @@ def jobs_localiza_autem():
     
     except TimeoutException:
 
-        print('Não foi possível conectar-se ao Autem.(Página não carrega).')
+        print('Não foi possível conectar-se ao Autem.(Página não carrega). Tente novamente.')
         input('Enter para sair.')
         browser.quit()
         raise SystemExit
@@ -338,6 +338,8 @@ def jobs_localiza_autem():
     clear_ss, not_clear_ss = jobs_pandas()
     
     ss_check = []
+    
+    ss_not_check = []
     
     freio_loop = 0
     
@@ -438,11 +440,31 @@ def jobs_localiza_autem():
             #input today date into its field
             write(timestamp_today, into=S('#NFList > tbody > tr > td:nth-child(3) > div > input'))
             
+                 
+        except (TimeoutException, LookupError):
+            
+            print('Erro saída geral.')
+            # clear_ss.remove(job_cleared)
+            # not_clear_ss.append(job_cleared)
+            print(f'{invoice_number}: {job_cleared} falhou')
+            
+            with open(f"producao\\jobs_csv\\verificacao_not_clear.txt", "w") as file:
+                
+                for linha in ss_not_check:
+                    
+                    file.write(f'{str(invoice_number)}: {str(linha)} \n')
+                    
+            continue
+        
+        #try:except for the critical loop, meaning, after the invoice has been created and the service failed for some reason.
+        #the invoice number must interate, the service that failed must be logged and the invoice downloaded must be deleted.  
+        try:
+            
             #get invoice from nota carioca
             invoice_file, invoice_file_number = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
             
             print(f'Preenchendo dados do serviço no Autem ({ss})......')
-              
+            
             #Autem: fill invoice number into autem
             browser.switch_to.window(autem_browser_tab)
             wait_until(S('#datatable_servicos > tbody').exists)
@@ -479,12 +501,12 @@ def jobs_localiza_autem():
             # file_input_ele.web_element.send_keys(invoice_file)
             
             #check if invoice number matchs the actual document
-            if invoice_number != invoice_file_number:
+            # if invoice_number != invoice_file_number:
                 
-                print(f'Número da nota não é igual!')
-                print(f'{invoice_number}: {job_cleared} falhou')
+            #     print(f'Número da nota não é igual!')
+            #     print(f'{invoice_number}: {job_cleared} falhou')
                 
-                break
+            #     break
             
             #Save and complete the job
             wait_until(S("i[class='icon icon-save color-edit save-note'").exists, timeout_secs=30)
@@ -504,7 +526,7 @@ def jobs_localiza_autem():
 
             #stores completed jobs into a list
             ss_check.append(f'{job_cleared["ss"]} {job_cleared["faturamento"]} {invoice_number}')
-             
+            
             #save completed clear jobs into a file
             with open(f"producao\\jobs_csv\\verificacao_clear_{timestamp}.txt", "w") as file:
                 
@@ -525,18 +547,23 @@ def jobs_localiza_autem():
             
         except (TimeoutException, LookupError):
             
-            print('Erro saída geral.')
-            clear_ss.remove(job_cleared)
-            not_clear_ss.append(job_cleared)
-            print(f'{invoice_number}: {job_cleared} falhou')
-            
-            with open(f"producao\\jobs_csv\\verificacao_not_clear_{timestamp}.txt", "w") as file:
+                print('Erro saída crítica (nota gerada).')
+                # clear_ss.remove(job_cleared)
+                # not_clear_ss.append(job_cleared)
+                print(f'{invoice_number}: {job_cleared} falhou. Crítico.')
                 
-                for linha in not_clear_ss:
+                ss_not_check.append(f'{job_cleared["ss"]} {job_cleared["faturamento"]} {invoice_number}')
+                
+                with open(f"producao\\jobs_csv\\verificacao_not_clear.txt", "w") as file:
                     
-                    file.write(f'{str(invoice_number)}: {str(linha)} \n')
-                    
-            continue
+                    for linha in ss_not_check:
+                        
+                        file.write(f'{str(invoice_number)}: {str(linha)} \n')
+                        
+                os.remove(invoice_file)
+                invoice_number += 1
+                input('Enter para interromper.')
+                break
         
     while len(browser.window_handles) > 1:
         
@@ -551,6 +578,7 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     #TODO cnpj ending in 6663: extra step -> click on first
     #access nota carioca and download the specific job invoice
     
+    #TODO debug
     print(f'Logando no Nota Carioca ({ss})......')
     
     #switch tabs
@@ -617,6 +645,8 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     # default_path = os.path.join(user_download_dir, invoice_file[0])
     # corrected_nota_file_path = os.path.join(jobs_file_path, invoice_file[0])
     # os.replace(default_path, corrected_nota_file_path)
+    
+    print(f'Nota gerada! ({ss})......')
     
     return invoice_file[0], invoice_file_number
     
