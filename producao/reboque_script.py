@@ -158,7 +158,6 @@ def jobs_localiza_autem():
     #list to store each job dictionary
     job_list_localiza = []
     
-    #TODO extract more localiza SS jobs
     #loop to go through pages of localiza jobs
     for loca_page_index in range(11):
         
@@ -282,7 +281,6 @@ def jobs_localiza_autem():
         browser.quit()
         raise SystemExit
     
-    #TODO verify fix for better autem scrape
     get_driver().execute_script("arguments[0].value = ''", S('#filtro_de').web_element)
     wait_until(S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > button > div').exists)
     write(timestamp_autem_filter, into=S('#filtro_de'))
@@ -343,7 +341,6 @@ def jobs_localiza_autem():
     
     freio_loop = 0
     
-    #TODO ajust invoice_number logic
     for job_cleared in clear_ss:
         
         try:
@@ -460,6 +457,8 @@ def jobs_localiza_autem():
         #the invoice number must interate, the service that failed must be logged and the invoice downloaded must be deleted.  
         try:
             
+            invoice_file = ''
+            
             #get invoice from nota carioca
             invoice_file, invoice_file_number = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
             
@@ -471,7 +470,7 @@ def jobs_localiza_autem():
             print(job_cleared['ss_pre'])
             click(job_cleared['ss_pre'])
             wait_until(S('#servico_editar_assistencia').exists, timeout_secs=30)
-
+            
             write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
             click('Salvar')
             wait_until(S('#bt-negative').exists)
@@ -489,7 +488,7 @@ def jobs_localiza_autem():
             get_driver().close()
             
             print(f'Ainda preenchendo o Localiza ({ss})......')
-            
+                     
             #Feed invoice to localiza
             browser.switch_to.window(localiza_browser_tab)
             wait_until(S('#NFList > tbody > tr > td:nth-child(7) > div > label > span').exists)
@@ -512,18 +511,42 @@ def jobs_localiza_autem():
             wait_until(S("i[class='icon icon-save color-edit save-note'").exists, timeout_secs=30)
             click(S("i[class='icon icon-save color-edit save-note'"))
             time.sleep(3)
-            click(S("i[class='icon icon-save color-edit save-note'"))
-            wait_until(S("i[class='icon icon-pencil color-edit edit-note'").exists, timeout_secs=30)
+            
+            try:
+                
+                click(S("i[class='icon icon-save color-edit save-note'"))
+                
+            except (TimeoutException, LookupError):
+                
+                None
+                
+            try:
+                
+                wait_until(S("i[class='icon icon-pencil color-edit edit-note'").exists, timeout_secs=30)
+                
+            except TimeoutException:
+                
+                click(S("i[class='icon icon-save color-edit save-note'"))
+            
             click('Clique aqui para finalizar o envio da nota')
             wait_until(S('#btnConcluir').exists, timeout_secs= 30)
             click('Ok')
             wait_until(S('body > div.modal > div.modal-center > div > div.modal-box-actions > button').exists, timeout_secs=30)
             click('Concluir')
             
-            #TODO delete more often 
             #Delete invoice
-            os.remove(invoice_file)
-
+            time.sleep(1)
+            
+            try:
+                
+                while os.path.exists(invoice_file) == True:
+                    
+                    os.remove(invoice_file)
+                    
+            except FileNotFoundError:
+                
+                None
+            
             #stores completed jobs into a list
             ss_check.append(f'{job_cleared["ss"]} {job_cleared["faturamento"]} {invoice_number}')
             
@@ -627,7 +650,9 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     wait_until(S('#ctl00_cphBase_img').exists)
     click(S('#ctl00_cphBase_btGerarPDF'))
     
+    #TODO error here v
     #locate file based on its partial file name
+    time.sleep(5)
     invoice_file = glob.glob(f'{user_download_dir}/**/*NFSe_*.pdf', recursive=True)
     
     invoice_file_number = int(os.path.basename(invoice_file[0])[9:13])
@@ -713,7 +738,6 @@ def jobs_pandas():
     # print(df_localiza)
     # print(merge_localiza_autem)
     
-    #TODO use placa as merge factor; compare placas
     #Compare ss to value and save the results to two lists of dictionaries. Clear and not clear to continue
     for index_merge in range(len(merge_localiza_autem)):
     
