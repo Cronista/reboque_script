@@ -17,7 +17,7 @@ from simplegmail import Gmail
 print('Criando variáveis......')
 
 timestamp = time.strftime('%Y%m%d-%H%M%S')
-timestamp_autem_filter = (datetime.now() - timedelta(days=10)).strftime('%d/%m/%Y %H:%M')
+timestamp_autem_filter = (datetime.now() - timedelta(days=30)).strftime('%d/%m/%Y %H:%M')
 timestamp_today = (datetime.now().strftime('%d/%m/%Y'))
 
 #debug
@@ -445,7 +445,7 @@ def jobs_localiza_autem():
             # not_clear_ss.append(job_cleared)
             print(f'{invoice_number}: {job_cleared} falhou')
             
-            with open(f"producao\\jobs_csv\\verificacao_not_clear.txt", "w") as file:
+            with open(f"producao\\jobs_csv\\verificacao_not_clear_{timestamp}.txt", "w") as file:
                 
                 for linha in ss_not_check:
                     
@@ -577,7 +577,7 @@ def jobs_localiza_autem():
                 
                 ss_not_check.append(f'{job_cleared["ss"]} {job_cleared["faturamento"]} {invoice_number}')
                 
-                with open(f"producao\\jobs_csv\\verificacao_not_clear.txt", "w") as file:
+                with open(f"producao\\jobs_csv\\verificacao_not_clear_{timestamp}.txt", "w") as file:
                     
                     for linha in ss_not_check:
                         
@@ -594,6 +594,8 @@ def jobs_localiza_autem():
         browser.close() 
         
     browser.quit()
+    print('Todos feitos!')
+    input('Enter para encerrar.')
     
 def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_browser_tab):
             
