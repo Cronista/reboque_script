@@ -473,18 +473,36 @@ def jobs_localiza_autem():
             
             write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
             click('Salvar')
-            wait_until(S('#bt-negative').exists)
             
+            #when autem saves the info without the warning pop-up
+            try:
+                
+                wait_until(S('#bt-negative').exists)
+                address_element_bt = S('#bt-positive')
+                
+            except TimeoutException:
+                
+                None
+                
             #treat for incorrect address warning
-            address_element_bt = S('#bt-positive')
+            # address_element_bt = S('#bt-positive')
             if 'CONTINUAR...' in address_element_bt.web_element.text:
                 
                 wait_until(S('#bt-positive').exists)
                 click('#bt-positive')
+                # click('CONTINUAR...')
                 wait_until(S('#bt-negative').exists)
                 click(S('#bt-negative'))  
-    
-            click(S('#bt-negative'))    
+                
+            #when autem saves the info without the warning pop-up
+            try:
+                
+                click(S('#bt-negative'))    
+                
+            except TimeoutException:
+                
+                None
+                
             get_driver().close()
             
             print(f'Ainda preenchendo o Localiza ({ss})......')
@@ -649,7 +667,19 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     # press(ENTER)
     
     Alert().accept()
-    wait_until(S('#ctl00_cphBase_img').exists)
+    
+    #treat for when CNPJ is not registred within Nota Carioca
+    try:
+        
+        wait_until(S('#ctl00_cphBase_img').exists)
+    
+    except TimeoutException:
+        
+        print('CNPJ não cadastrado no Nota Carioca!')
+        input('Enter para encerrar.')
+        browser.quit()
+        raise SystemExit()
+    
     click(S('#ctl00_cphBase_btGerarPDF'))
     
     #TODO error here v
