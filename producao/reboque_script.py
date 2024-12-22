@@ -17,7 +17,7 @@ from simplegmail import Gmail
 print('Criando variáveis......')
 
 timestamp = time.strftime('%Y%m%d-%H%M%S')
-timestamp_autem_filter = (datetime.now() - timedelta(days=30)).strftime('%d/%m/%Y %H:%M')
+timestamp_autem_filter = (datetime.now() - timedelta(days=50)).strftime('%d/%m/%Y %H:%M')
 timestamp_today = (datetime.now().strftime('%d/%m/%Y'))
 
 #debug
@@ -79,6 +79,45 @@ def jobs_localiza_autem():
         except (TypeError, ValueError):
             
             print('Número inválido.')
+    
+    #take date period from user to input into autem filter        
+    def get_date_autem(prompt):
+        
+        while True:
+            
+            user_input = input(prompt).strip()
+            try:
+                #take the user input and format it properly
+                date = datetime.strptime(f"{user_input}/{datetime.now().year}", "%d/%m/%Y")
+                return date
+            
+            except ValueError:
+                
+                print("Formato inválido. Use 'DD/MM'.")
+
+    def set_date_autem():
+        
+        print("Escreva a data inicial e final de apuração de serviços do Autem, no formato 'DD/MM'.\n")
+
+        start_date = get_date_autem("Data inicial (DD/MM): ")
+        end_date = get_date_autem("Data final (DD/MM): ")
+
+        #add the missing hour and minute data, as autem requires
+        start_datetime_autem = start_date.replace(hour=0, minute=0)
+        end_datetime_autem = end_date.replace(hour=23, minute=59)
+
+        #treat if start date is bigger than end date
+        if start_datetime_autem > end_datetime_autem:
+            print("A data incial deve ser menor ou igual à data final. Tente novamente.")
+            return set_date_autem()
+
+        #set the correct date format, accepted in autem
+        end_datetime_autem = end_datetime_autem.strftime('%d/%m/%Y %H:%M')
+        start_datetime_autem = start_datetime_autem.strftime('%d/%m/%Y %H:%M')
+        
+        return end_datetime_autem, start_datetime_autem
+    
+    end_datetime_autem, start_datetime_autem = set_date_autem()        
 
     #set file paths
     jobs_file_path = os.path.join(os.getcwd(), 'producao', 'jobs_csv')
@@ -254,7 +293,7 @@ def jobs_localiza_autem():
     # wait_until(S('#mapa_relatorio').exists)
     # go_to('https://web.autem.com.br/servicos/visualizar/')
     
-    #change table filter parameters to include more data (about 10 days)
+    #change table filter parameters to include more data
     try:
         
         wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)
@@ -282,11 +321,19 @@ def jobs_localiza_autem():
         raise SystemExit
     
     get_driver().execute_script("arguments[0].value = ''", S('#filtro_de').web_element)
+    get_driver().execute_script("arguments[0].value = ''", S('#filtro_ate').web_element)
     wait_until(S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > button > div').exists)
-    write(timestamp_autem_filter, into=S('#filtro_de'))
+    # write(start_datetime_autem, into=S('#filtro_de'))
+    # write(end_datetime_autem, into=S('#filtro_ate'))
+    # click(S('#filtro_de'))
+    
     click(S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > button'))
     wait_until(S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > div > div.bs-searchbox > input').exists)
     click(reboque_empresa_autem)
+    
+    write(start_datetime_autem, into=S('#filtro_de'))
+    write(end_datetime_autem, into=S('#filtro_ate'))
+    
     wait_until(S('#btn_filtrar').exists)
     click(S('#btn_filtrar'))
     
@@ -415,6 +462,11 @@ def jobs_localiza_autem():
             print(f'Localizando e-mail com a nota ({ss})......')
             
             ss_filename = download_attachments(gmail, job_cleared['ss'], browser)
+            
+            if ss_filename == 'error_e-mail_not_found':
+                
+                continue
+                
             clear_cnpj = get_4_cnpj(ss_filename)
             #transforms the last 4 digits into string so python or js doest read as an octal number
             clear_cnpj_str = str(clear_cnpj[0])
@@ -455,12 +507,16 @@ def jobs_localiza_autem():
         
         #try:except for the critical loop, meaning, after the invoice has been created and the service failed for some reason.
         #the invoice number must interate, the service that failed must be logged and the invoice downloaded must be deleted.  
+        
+        #get invoice from nota carioca
+        invoice_file, invoice_file_number = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab, ss_not_check, job_cleared)
+        
         try:
             
             invoice_file = ''
             
-            #get invoice from nota carioca
-            invoice_file, invoice_file_number = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
+            # #get invoice from nota carioca
+            # invoice_file, invoice_file_number = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
             
             print(f'Preenchendo dados do serviço no Autem ({ss})......')
             
@@ -478,24 +534,19 @@ def jobs_localiza_autem():
             try:
                 
                 wait_until(S('#bt-negative').exists)
+           
                 address_element_bt = S('#bt-positive')
                 
-            except TimeoutException:
-                
-                None
-                
-            #treat for incorrect address warning
-            # address_element_bt = S('#bt-positive')
-            if 'CONTINUAR...' in address_element_bt.web_element.text:
-                
-                wait_until(S('#bt-positive').exists)
-                click('#bt-positive')
-                # click('CONTINUAR...')
-                wait_until(S('#bt-negative').exists)
-                click(S('#bt-negative'))  
-                
-            #when autem saves the info without the warning pop-up
-            try:
+                #treat for incorrect address warning
+                # address_element_bt = S('#bt-positive')
+                if 'CONTINUAR...' in address_element_bt.web_element.text:
+                    
+                    wait_until(S('#bt-positive').exists)
+                    click('#bt-positive')
+                    # click('CONTINUAR...')
+                    wait_until(S('#bt-negative').exists)
+                    click(S('#bt-negative'))  
+
                 
                 click(S('#bt-negative'))    
                 
@@ -615,13 +666,12 @@ def jobs_localiza_autem():
     print('Todos feitos!')
     input('Enter para encerrar.')
     
-def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_browser_tab):
+def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_browser_tab, ss_not_check, job_cleared):
             
     #NotaCarioca
     #TODO cnpj ending in 6663: extra step -> click on first
     #access nota carioca and download the specific job invoice
     
-    #TODO debug
     print(f'Logando no Nota Carioca ({ss})......')
     
     #switch tabs
@@ -662,50 +712,85 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
     write(ss_value, into=S('#ctl00_cphCabMenu_tbValor'))
     click(S('#ctl00_cphCabMenu_rblISSRetido_1'))
     
-    #Downloads invoice
-    click('EMITIR >>')
-    # press(ENTER)
-    
-    Alert().accept()
-    
-    #treat for when CNPJ is not registred within Nota Carioca
+    #try:except for critial error (invoice generated)
     try:
         
-        wait_until(S('#ctl00_cphBase_img').exists)
-    
-    except TimeoutException:
+        #Downloads invoice
+        click('EMITIR >>')
+        # press(ENTER)
         
-        print('CNPJ não cadastrado no Nota Carioca!')
-        input('Enter para encerrar.')
-        browser.quit()
-        raise SystemExit()
-    
-    click(S('#ctl00_cphBase_btGerarPDF'))
-    
-    #TODO error here v
-    #locate file based on its partial file name
-    time.sleep(5)
-    invoice_file = glob.glob(f'{user_download_dir}/**/*NFSe_*.pdf', recursive=True)
-    
-    invoice_file_number = int(os.path.basename(invoice_file[0])[9:13])
-    
-    #waits until the file is downloaded
-    while len(invoice_file) == 0:
+        try:
+            
+            Alert().accept()
         
+        except LookupError:
+            
+            print(f'CNPJ não cadastrado no Nota Carioca! ({ss})')
+            input('Enter para encerrar.')
+            browser.quit()
+            raise SystemExit()
+            
+        
+        #treat for when CNPJ is not registred within Nota Carioca
+        try:
+            
+            wait_until(S('#ctl00_cphBase_img').exists)
+        
+        except TimeoutException:
+            
+            print('CNPJ não cadastrado no Nota Carioca!')
+            input('Enter para encerrar.')
+            browser.quit()
+            raise SystemExit()
+        
+        click(S('#ctl00_cphBase_btGerarPDF'))
+        
+        #TODO error here v
+        #locate file based on its partial file name
+        time.sleep(5)
         invoice_file = glob.glob(f'{user_download_dir}/**/*NFSe_*.pdf', recursive=True)
-        time.sleep(1)
         
-    click(S('#ctl00_cphBase_btVoltar'))
+        invoice_file_number = int(os.path.basename(invoice_file[0])[9:13])
+        
+        #waits until the file is downloaded
+        while len(invoice_file) == 0:
+            
+            invoice_file = glob.glob(f'{user_download_dir}/**/*NFSe_*.pdf', recursive=True)
+            time.sleep(1)
+            
+        click(S('#ctl00_cphBase_btVoltar'))
+        
+        #manages file
+        #TODO; ajust path: correct is the same as default; or just ask user to not have any invoice in his default download folder
+        # default_path = os.path.join(user_download_dir, invoice_file[0])
+        # corrected_nota_file_path = os.path.join(jobs_file_path, invoice_file[0])
+        # os.replace(default_path, corrected_nota_file_path)
+        
+        print(f'Nota gerada! ({ss})......')
+        
+        return invoice_file[0], invoice_file_number
     
-    #manages file
-    #TODO; ajust path: correct is the same as default; or just ask user to not have any invoice in his default download folder
-    # default_path = os.path.join(user_download_dir, invoice_file[0])
-    # corrected_nota_file_path = os.path.join(jobs_file_path, invoice_file[0])
-    # os.replace(default_path, corrected_nota_file_path)
+    except (TimeoutException, LookupError):
     
-    print(f'Nota gerada! ({ss})......')
-    
-    return invoice_file[0], invoice_file_number
+        print('Erro saída crítica (nota gerada).')
+        # clear_ss.remove(job_cleared)
+        # not_clear_ss.append(job_cleared)
+        print(f'{invoice_number}: {job_cleared} falhou. Crítico.')
+        
+        ss_not_check.append(f'{job_cleared["ss"]} {job_cleared["faturamento"]} {invoice_number}')
+        
+        with open(f"producao\\jobs_csv\\verificacao_not_clear_{timestamp}.txt", "w") as file:
+            
+            for linha in ss_not_check:
+                
+                file.write(f'{str(invoice_number)}: {str(linha)} \n')
+                
+        os.remove(invoice_file)
+        invoice_number += 1
+        input('Enter para interromper.')
+        
+        browser.quit()
+        raise SystemError
     
 ##Pandas
 #Compare job lists
@@ -831,7 +916,7 @@ def download_attachments(gmail, ss: str, browser) -> str:
     
     #treat not finding messages
     if not messages:
-        print("Nenhum e-mail encontrado")
+        print(f"Nenhum e-mail encontrado {ss}")
         return 'error_e-mail_not_found'
     
     #locate and save the pdf to the proper location
