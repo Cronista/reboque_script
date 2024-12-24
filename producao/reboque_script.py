@@ -567,7 +567,7 @@ def jobs_localiza_autem():
                 if 'CONTINUAR...' in address_element_bt.web_element.text:
                     
                     wait_until(S('#bt-positive').exists)
-                    click('#bt-positive')
+                    click(S('#bt-positive'))
                     time.sleep(1)
                     # click('CONTINUAR...')
                     wait_until(S('#bt-negative').exists)
