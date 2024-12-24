@@ -1,6 +1,7 @@
 from helium import *
 from selenium import webdriver
 from selenium.common.exceptions import TimeoutException
+from requests.exceptions import ReadTimeout
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -61,7 +62,7 @@ def jobs_localiza_autem():
             
             print('Insira um número válido para a nota incial')
             invoice_number = int(input())
-            os.system('cls')
+            # os.system('cls')
         
         except (TypeError, ValueError):
             
@@ -74,7 +75,7 @@ def jobs_localiza_autem():
             
             print('Insira um número de notas a serem feitas')
             freio = int(input())
-            os.system('cls')
+            # os.system('cls')
         
         except (TypeError, ValueError):
             
@@ -215,9 +216,14 @@ def jobs_localiza_autem():
             
         except TimeoutException:
             
-            print('Não foi possível conectar-se ao Localiza. -Página de jobs-')
+            print('Não foi possível conectar-se ao Localiza. -Página de serviços-')
             input('Enter para sair.')
-
+            
+            while len(browser.window_handles) > 1:
+                
+                browser.switch_to.window(browser.window_handles[-1])
+                browser.close()
+                
             browser.quit()
             
             raise SystemExit
@@ -296,29 +302,52 @@ def jobs_localiza_autem():
     #change table filter parameters to include more data
     try:
         
-        wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)
+        click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
         
+    except NoSuchElementException:
+        
+        wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)    
+    
     except TimeoutException:
 
         print('Não foi possível conectar-se ao Autem. Tente novamente.')
         input('Enter para sair.')
+        
+        while len(browser.window_handles) > 1:
+        
+            browser.switch_to.window(browser.window_handles[-1])
+            browser.close() 
+            
         browser.quit()
         raise SystemExit
     
-    wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)
-    click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
+    # wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)
+    # click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
     # click('PROCURAR')
     
     try:
     
-        wait_until(S('#filtro_de').exists, timeout_secs= 30)
+        wait_until(S('#filtro_de').exists, timeout_secs= 5)
     
     except TimeoutException:
 
-        print('Não foi possível conectar-se ao Autem.(Página não carrega). Tente novamente.')
-        input('Enter para sair.')
-        browser.quit()
-        raise SystemExit
+        try:
+            
+            click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
+            wait_until(S('#filtro_de').exists, timeout_secs= 5)
+            
+        except TimeoutException:
+                
+            print('Não foi possível conectar-se ao Autem.(Página não carrega). Tente novamente.')
+            input('Enter para sair.')
+    
+            while len(browser.window_handles) > 1:
+            
+                browser.switch_to.window(browser.window_handles[-1])
+                browser.close() 
+                
+            browser.quit()
+            raise SystemExit
     
     get_driver().execute_script("arguments[0].value = ''", S('#filtro_de').web_element)
     get_driver().execute_script("arguments[0].value = ''", S('#filtro_ate').web_element)
@@ -509,14 +538,10 @@ def jobs_localiza_autem():
         #the invoice number must interate, the service that failed must be logged and the invoice downloaded must be deleted.  
         
         #get invoice from nota carioca
-        invoice_file, invoice_file_number = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab, ss_not_check, job_cleared)
+        invoice_file = ''
+        invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab, ss_not_check, job_cleared, invoice_number)
         
         try:
-            
-            invoice_file = ''
-            
-            # #get invoice from nota carioca
-            # invoice_file, invoice_file_number = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab)
             
             print(f'Preenchendo dados do serviço no Autem ({ss})......')
             
@@ -608,9 +633,9 @@ def jobs_localiza_autem():
             
             try:
                 
-                while os.path.exists(invoice_file) == True:
+                while os.path.exists(invoice_file[0]) == True:
                     
-                    os.remove(invoice_file)
+                    os.remove(invoice_file[0])
                     
             except FileNotFoundError:
                 
@@ -652,7 +677,6 @@ def jobs_localiza_autem():
                         
                         file.write(f'{str(invoice_number)}: {str(linha)} \n')
                         
-                os.remove(invoice_file)
                 invoice_number += 1
                 input('Enter para interromper.')
                 break
@@ -666,52 +690,72 @@ def jobs_localiza_autem():
     print('Todos feitos!')
     input('Enter para encerrar.')
     
-def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_browser_tab, ss_not_check, job_cleared):
-            
-    #NotaCarioca
-    #TODO cnpj ending in 6663: extra step -> click on first
-    #access nota carioca and download the specific job invoice
+def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_browser_tab, ss_not_check, job_cleared, invoice_number):
     
-    print(f'Logando no Nota Carioca ({ss})......')
-    
-    #switch tabs
-    browser.switch_to.window(nota_browser_tab)
-    go_to('https://notacarioca.rio.gov.br/contribuinte/nota.aspx')
-    
-    #get the full specific cnpj
-    _, full_cnpj = get_4_cnpj(ss_filename)
-    
-    #write the full cnpj into nota and proceed to the next page
-    
+    #treat nota carioca not loading        
     try:
         
-        wait_until(S('#ctl00_cphCabMenu_tbCPFCNPJTomador').exists, timeout_secs=30)
+        #NotaCarioca
+        #TODO cnpj ending in 6663: extra step -> click on first
+        #access nota carioca and download the specific job invoice
         
-    except TimeoutException:
+        print(f'Logando no Nota Carioca ({ss})......')
         
-        browser.quit()
+        #switch tabs
+        browser.switch_to.window(nota_browser_tab)
+        go_to('https://notacarioca.rio.gov.br/contribuinte/nota.aspx')
         
-        print('Não foi possível conectar-se ao NotaCarioca.')
-        input('Enter para sair.')
+        #get the full specific cnpj
+        _, full_cnpj = get_4_cnpj(ss_filename)
         
-        raise SystemExit
-    
-    
-    write(full_cnpj, into=S('#ctl00_cphCabMenu_tbCPFCNPJTomador'))
-    click('AVANÇAR >>')
-    
-    if full_cnpj == '16670085016663':
+        #write the full cnpj into nota and proceed to the next page
         
-        click('0.395.135-9 - LOCALIZA RENT A CAR SA (Filial)')
+        try:
+            
+            wait_until(S('#ctl00_cphCabMenu_tbCPFCNPJTomador').exists, timeout_secs=30)
+            
+        except TimeoutException:
+            
+            while len(browser.window_handles) > 1:
+            
+                browser.switch_to.window(browser.window_handles[-1])
+                browser.close() 
+                
+            browser.quit()
+            
+            print('Não foi possível conectar-se ao NotaCarioca.')
+            input('Enter para sair.')
+            
+            raise SystemExit
+        
+        
+        write(full_cnpj, into=S('#ctl00_cphCabMenu_tbCPFCNPJTomador'))
+            
         click('AVANÇAR >>')
-    
-    #fill in required info into fields
-    wait_until(S('#ctl00_cphCabMenu_tbDiscriminacao').exists, timeout_secs=30)
-    
-    write(ss, into=S('#ctl00_cphCabMenu_tbDiscriminacao'))
-    write(ss_value, into=S('#ctl00_cphCabMenu_tbValor'))
-    click(S('#ctl00_cphCabMenu_rblISSRetido_1'))
-    
+        
+        if full_cnpj == '16670085016663':
+            
+            click('0.395.135-9 - LOCALIZA RENT A CAR SA (Filial)')
+            click('AVANÇAR >>')
+        
+        #fill in required info into fields
+        wait_until(S('#ctl00_cphCabMenu_tbDiscriminacao').exists, timeout_secs=30)
+        
+        write(ss, into=S('#ctl00_cphCabMenu_tbDiscriminacao'))
+        write(ss_value, into=S('#ctl00_cphCabMenu_tbValor'))
+        click(S('#ctl00_cphCabMenu_rblISSRetido_1'))
+        
+    except ReadTimeout:
+            
+            print('Nota Carioca não carrega. Tente novamente (Fora do ar; Readtimeout).')
+            
+            while len(browser.window_handles) > 1:
+            
+                browser.switch_to.window(browser.window_handles[-1])
+                browser.close()
+                
+            browser.quit() 
+            
     #try:except for critial error (invoice generated)
     try:
         
@@ -719,6 +763,7 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
         click('EMITIR >>')
         # press(ENTER)
         
+        #treat for when CNPJ is not registred within Nota Carioca
         try:
             
             Alert().accept()
@@ -727,6 +772,11 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
             
             print(f'CNPJ não cadastrado no Nota Carioca! ({ss})')
             input('Enter para encerrar.')
+            while len(browser.window_handles) > 1:
+        
+                browser.switch_to.window(browser.window_handles[-1])
+                browser.close()    
+                     
             browser.quit()
             raise SystemExit()
             
@@ -740,35 +790,49 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
             
             print('CNPJ não cadastrado no Nota Carioca!')
             input('Enter para encerrar.')
+            
+            while len(browser.window_handles) > 1:
+        
+                browser.switch_to.window(browser.window_handles[-1])
+                browser.close() 
+                
             browser.quit()
             raise SystemExit()
         
         click(S('#ctl00_cphBase_btGerarPDF'))
         
-        #TODO error here v
-        #locate file based on its partial file name
-        time.sleep(5)
-        invoice_file = glob.glob(f'{user_download_dir}/**/*NFSe_*.pdf', recursive=True)
-        
-        invoice_file_number = int(os.path.basename(invoice_file[0])[9:13])
-        
-        #waits until the file is downloaded
+        #locate invoice file based on it's name
+        time.sleep(1)   
+        invoice_file = glob.glob(f'{user_download_dir}/NFSe_*{invoice_number}_13432007.pdf')  
+
         while len(invoice_file) == 0:
             
-            invoice_file = glob.glob(f'{user_download_dir}/**/*NFSe_*.pdf', recursive=True)
             time.sleep(1)
+            invoice_file = glob.glob(f'{user_download_dir}/NFSe_*{invoice_number}_13432007.pdf')   
+        
+        #locate file based on its partial file name
+        # time.sleep(5)
+        # invoice_file = glob.glob(f'{user_download_dir}/**/*NFSe_*.pdf', recursive=True)
+        # #waits until the file is downloaded
+        # while len(invoice_file) == 0:
+            
+        #     invoice_file = glob.glob(f'{user_download_dir}/**/*NFSe_*.pdf', recursive=True)
+        #     time.sleep(1)
+        
+        #unused
+        #invoice_file_number = int(os.path.basename(invoice_file[0])[9:13])
             
         click(S('#ctl00_cphBase_btVoltar'))
         
         #manages file
-        #TODO; ajust path: correct is the same as default; or just ask user to not have any invoice in his default download folder
+        #TODOnot; ajust path: correct is the same as default; or just ask user to not have any invoice in his default download folder
         # default_path = os.path.join(user_download_dir, invoice_file[0])
         # corrected_nota_file_path = os.path.join(jobs_file_path, invoice_file[0])
         # os.replace(default_path, corrected_nota_file_path)
         
         print(f'Nota gerada! ({ss})......')
         
-        return invoice_file[0], invoice_file_number
+        return invoice_file[0], #invoice_file_number
     
     except (TimeoutException, LookupError):
     
@@ -785,16 +849,20 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
                 
                 file.write(f'{str(invoice_number)}: {str(linha)} \n')
                 
-        os.remove(invoice_file)
         invoice_number += 1
         input('Enter para interromper.')
         
+        while len(browser.window_handles) > 1:
+            
+            browser.switch_to.window(browser.window_handles[-1])
+            browser.close() 
+            
         browser.quit()
         raise SystemError
     
 ##Pandas
 #Compare job lists
-def jobs_pandas():
+def jobs_pandas() -> list:
     
     #set up job lists dataframes
     df_localiza = pd.read_csv('producao\jobs_csv\localiza_.csv')
@@ -910,6 +978,11 @@ def download_attachments(gmail, ss: str, browser) -> str:
         print('Token do Gmail API expirado. Renicie o programa.')
         input('Enter para sair.')
         
+        while len(browser.window_handles) > 1:
+        
+            browser.switch_to.window(browser.window_handles[-1])
+            browser.close() 
+            
         browser.quit()
         
         raise SystemExit
