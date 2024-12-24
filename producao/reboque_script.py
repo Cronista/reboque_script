@@ -415,6 +415,8 @@ def jobs_localiza_autem():
     
     ss_not_check = []
     
+    ss_email = []
+    
     freio_loop = 0
     
     for job_cleared in clear_ss:
@@ -493,6 +495,15 @@ def jobs_localiza_autem():
             ss_filename = download_attachments(gmail, job_cleared['ss'], browser)
             
             if ss_filename == 'error_e-mail_not_found':
+                
+                ss_email.append(f'{job_cleared["ss"]} {job_cleared["faturamento"]} {invoice_number}')
+                
+                with open(f"producao\\jobs_csv\\verificacao_email{timestamp}.txt", "w") as file:
+                
+                    for linha in ss_email:
+                    
+                        file.write(f'{str(invoice_number)}: {str(linha)} \n')
+                    
                 
                 continue
                 
@@ -573,8 +584,9 @@ def jobs_localiza_autem():
                     wait_until(S('#bt-negative').exists)
                     click(S('#bt-negative'))  
 
+                else:
                 
-                click(S('#bt-negative'))    
+                    click(S('#bt-negative'))    
                 
             except TimeoutException:
                 
