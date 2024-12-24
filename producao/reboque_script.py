@@ -558,7 +558,7 @@ def jobs_localiza_autem():
             #when autem saves the info without the warning pop-up
             try:
                 
-                wait_until(S('#bt-negative').exists)
+                wait_until(S('#bt-positive').exists)
            
                 address_element_bt = S('#bt-positive')
                 
@@ -568,6 +568,7 @@ def jobs_localiza_autem():
                     
                     wait_until(S('#bt-positive').exists)
                     click('#bt-positive')
+                    time.sleep(1)
                     # click('CONTINUAR...')
                     wait_until(S('#bt-negative').exists)
                     click(S('#bt-negative'))  
