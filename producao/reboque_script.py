@@ -626,14 +626,21 @@ def jobs_localiza_autem():
             except (TimeoutException, LookupError):
                 
                 None
+            
+            #loop to treat page error while saving the job
+            save_icon_status_boolean_localiza = False
+            while save_icon_status_boolean_localiza == False:
                 
-            try:
-                
-                wait_until(S("i[class='icon icon-pencil color-edit edit-note'").exists, timeout_secs=30)
-                
-            except TimeoutException:
-                
-                click(S("i[class='icon icon-save color-edit save-note'"))
+                try:
+                    
+                    wait_until(S("i[class='icon icon-pencil color-edit edit-note'").exists, timeout_secs=30)
+                    
+                    save_icon_status_boolean_localiza = True
+                    
+                except TimeoutException:
+                    
+                   print('Tratando erro no Localiza. Por favor, aguarde.')
+                   click(S("i[class='icon icon-save color-edit save-note'"))
             
             click('Clique aqui para finalizar o envio da nota')
             wait_until(S('#btnConcluir').exists, timeout_secs= 30)
