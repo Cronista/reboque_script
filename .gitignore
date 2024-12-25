@@ -1,25 +1,5 @@
 
 /chromedriver-win64
-TEST.py
-TEST_JS_SELENIUM_1.py
-TEST_JS_SELENIUM_2.py
-TEST_JS_SELENIUM_3.py
-TEST_REQUESTS_BS4.py
-TEST_SELENIUM.py
-products.csv
-TESTE_JS_HELIUM.py
-defillama_protocols.csv
-TEST_JS_HELIUM/todo.txt
-TEST_JS_SELENIUM_2_todo.py
-TEST_JS_HELIUM/defillama_protocols20241004-222919.csv
-TEST_JS_HELIUM/defillama_protocols20241004-233019.csv
-TEST_JS_HELIUM/defillama_protocols20241004-233343.csv
-TEST_JS_HELIUM/etc.txt
-TEST_JS_HELIUM/defillama_protocols20241006-002956_1000.csv
-TEST_JS_HELIUM/defi_DF.py
-TEST_JS_HELIUM/defillama_protocols20241007-210848_na_15.csv
-TEST_JS_HELIUM/defillama_protocols20241007-211718_131.csv
 db.env
 /producao/jobs_csv
-/producao/etc
 /producao/google_api
