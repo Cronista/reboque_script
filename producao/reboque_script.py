@@ -5,10 +5,8 @@ from requests.exceptions import ReadTimeout
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-import csv, os, time, fitz, glob, json
+import csv, os, time, fitz, glob
 import pandas as pd
-import numpy as np
-import pygetwindow as gw
 from datetime import datetime, timedelta
 from simplegmail import Gmail
 
@@ -300,7 +298,7 @@ def jobs_localiza_autem():
     # go_to('https://web.autem.com.br/servicos/visualizar/')
     
     #change table filter parameters to include more data
-    try:
+    try: 
         
         click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
         
@@ -349,6 +347,7 @@ def jobs_localiza_autem():
             browser.quit()
             raise SystemExit
     
+    get_driver().execute_script("arguments[0].value = ''", S('#filtro_termo_text').web_element)
     get_driver().execute_script("arguments[0].value = ''", S('#filtro_de').web_element)
     get_driver().execute_script("arguments[0].value = ''", S('#filtro_ate').web_element)
     wait_until(S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > button > div').exists)
@@ -552,6 +551,7 @@ def jobs_localiza_autem():
         invoice_file = ''
         invoice_file = get_nota_carioca(browser, job_cleared['ss'], ss_filename, ss_value_number, jobs_file_path, nota_browser_tab, ss_not_check, job_cleared, invoice_number)
         
+        #try:except for the critical loop
         try:
             
             print(f'Preenchendo dados do serviço no Autem ({ss})......')
@@ -560,7 +560,68 @@ def jobs_localiza_autem():
             browser.switch_to.window(autem_browser_tab)
             wait_until(S('#datatable_servicos > tbody').exists)
             print(job_cleared['ss_pre'])
+            # click(job_cleared['ss_pre'])
+            #changing how to search for the ss on autem
+            #click on search button
+            try: 
+                    
+                    click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
+                    
+            except NoSuchElementException:
+                    
+                    wait_until(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects').exists)    
+                
+            except TimeoutException:
+            
+                print('Não foi possível conectar-se ao Autem. Tente novamente.')
+                input('Enter para sair.')
+                
+                while len(browser.window_handles) > 1:
+                
+                    browser.switch_to.window(browser.window_handles[-1])
+                    browser.close() 
+                    
+                browser.quit()
+                raise SystemExit
+            
+            #still treating if click does not work
+            try:
+               
+                   wait_until(S('#filtro_termo_text').exists, timeout_secs= 5)
+               
+            except TimeoutException:
+        
+                try:
+                    
+                    click(S('#datatable_servicos_wrapper > div.dt-buttons > button.dt-button.btn-icon.btn-light.ti-search.waves-effects'))
+                    wait_until(S('#filtro_termo_text').exists, timeout_secs= 5)
+                    
+                except TimeoutException:
+                        
+                    print('Não foi possível conectar-se ao Autem.(Página não carrega). Tente novamente.')
+                    input('Enter para sair.')
+            
+                    while len(browser.window_handles) > 1:
+                    
+                        browser.switch_to.window(browser.window_handles[-1])
+                        browser.close() 
+                        
+                    browser.quit()
+                    raise SystemExit
+            
+            #past ss into search field
+            get_driver().execute_script("arguments[0].value = ''", S('#filtro_termo_text').web_element)
+            wait_until(S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > button > div').exists)
+            
+            write(job_cleared['ss_pre'], into=S('#filtro_termo_text'))
+            
+            wait_until(S('#btn_filtrar').exists)
+            click(S('#btn_filtrar'))
+            
+            #click autem ss
+            wait_until(S('#datatable_servicos > tbody').exists)
             click(job_cleared['ss_pre'])
+            
             wait_until(S('#servico_editar_assistencia').exists, timeout_secs=30)
             
             write(ss + '/' + str(invoice_number), into=S('#servico_editar_assistencia'))
