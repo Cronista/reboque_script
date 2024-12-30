@@ -5,7 +5,7 @@ from requests.exceptions import ReadTimeout
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-import csv, os, time, fitz, glob
+import csv, os, time, fitz, glob, sys
 import pandas as pd
 from datetime import datetime, timedelta
 from simplegmail import Gmail
@@ -24,15 +24,33 @@ def screen_debug(browser):
 
     browser.save_screenshot('producao\jobs_csv\loca.png') 
 
-#path to deploy dotenv
-env_path = ('producao\db.env')
+#deploy dotenv
+if getattr(sys, 'frozen', False):
 
-#create a database to store environmental variables to secure login credentials in the code
+    # If running as a compiled executable
+
+    base_path = sys._MEIPASS  
+
+else:
+
+    # If running in development
+
+    base_path = os.path.dirname(__file__)
+
+
+
+env_path = os.path.join(base_path, 'db.env')
+
+load_dotenv(dotenv_path=env_path) 
+
+#env_path = ('producao\db.env')
+#load_dotenv(env_path)
+
 #set up credentials for Localiza
-load_dotenv(env_path)
-login_user_localiza = os.environ['LOGIN_USER_LOCALIZA']; login_pass_localiza = os.environ['LOGIN_PASS_LOCALIZA']
+
+# login_user_localiza = os.environ['LOGIN_USER_LOCALIZA']; login_pass_localiza = os.environ['LOGIN_PASS_LOCALIZA']
 #set up credentials for Autem
-login_user_autem = os.environ['LOGIN_USER_AUTEM']; login_pass_autem = os.environ['LOGIN_PASS_AUTEM']; login_code_autem = os.environ['LOGIN_CODE_AUTEM']
+# login_user_autem = os.environ['LOGIN_USER_AUTEM']; login_pass_autem = os.environ['LOGIN_PASS_AUTEM']; login_code_autem = os.environ['LOGIN_CODE_AUTEM']
 #set up creds. for user chrome user data
 """
 Edit before use. Specifc to PC.

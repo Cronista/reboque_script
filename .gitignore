@@ -3,3 +3,4 @@
 db.env
 /producao/jobs_csv
 /producao/google_api
+/producao/chromedriver-win64
