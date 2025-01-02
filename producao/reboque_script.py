@@ -105,19 +105,19 @@ def jobs_localiza_autem():
             user_input = input(prompt).strip()
             try:
                 #take the user input and format it properly
-                date = datetime.strptime(f"{user_input}/{datetime.now().year}", "%d/%m/%Y")
+                date = datetime.strptime(f"{user_input}", "%d/%m/%Y")
                 return date
             
             except ValueError:
                 
-                print("Formato inválido. Use 'DD/MM'.")
+                print("Formato inválido. Use 'DD/MM/AAAA'.")
 
     def set_date_autem():
         
-        print("Escreva a data inicial e final de apuração de serviços do Autem, no formato 'DD/MM'.\n")
+        print("Escreva a data inicial e final de apuração de serviços do Autem, no formato 'DD/MM/AAAA'.\n")
 
-        start_date = get_date_autem("Data inicial (DD/MM): ")
-        end_date = get_date_autem("Data final (DD/MM): ")
+        start_date = get_date_autem("Data inicial (DD/MM/AAAA): ")
+        end_date = get_date_autem("Data final (DD/MM/AAAA): ")
 
         #add the missing hour and minute data, as autem requires
         start_datetime_autem = start_date.replace(hour=0, minute=0)
