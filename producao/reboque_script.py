@@ -627,7 +627,7 @@ def jobs_localiza_autem():
                     browser.quit()
                     raise SystemExit
             
-            #past ss into search field
+            #paste ss into search field
             get_driver().execute_script("arguments[0].value = ''", S('#filtro_termo_text').web_element)
             wait_until(S('#servicos-modal-filtro > div > div > div.modal-body.padcustom > div:nth-child(2) > div > div > button > div').exists)
             
