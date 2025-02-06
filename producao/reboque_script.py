@@ -498,7 +498,7 @@ def jobs_localiza_autem():
                 continue 
             
             
-            #input job monetary value into it's field
+            #input job monetary value into its field
             get_driver().execute_script(f"arguments[0].value = {ss_value_number}", S('#NFList > tbody > tr > td:nth-child(6) > div > input').web_element)
             get_driver().execute_script("""
             arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
@@ -900,7 +900,7 @@ def get_nota_carioca(browser, ss, ss_filename, ss_value, jobs_file_path, nota_br
         
         click(S('#ctl00_cphBase_btGerarPDF'))
         
-        #locate invoice file based on it's name
+        #locate invoice file based on its name
         time.sleep(1)   
         invoice_file = glob.glob(f'{user_download_dir}/NFSe_*{invoice_number}_13432007.pdf')  
 
