@@ -23,9 +23,9 @@ The rule will be: if the value is lower, it will be marked positive. If the valu
 
 Besides the Localiza data table, each job is also consolidated with an e-mail that contains information about the job, including price and identification.
 
-Localiza is made up of many different company IDs, based on location. The job will carry the specific company ID based on where it physically happened. The control website, autem.com, does not have this information, thus, it had to be inputted manually. 
+Localiza is made up of many different company IDs, based on location. The job will carry the specific company ID based on where it physically happened. The control website, autem.com, does not have this information, thus, the input had to be done manually. 
 
-Upon locating the e-mail and extracting the CPNJ number within the standard PDF layout, it will be stored for later and autem.com will be updated automatically, using Selenium, with the last 4 numbers on the CNPJ identifier, as it requires.
+Upon locating the e-mail and extracting the CNPJ number within the standard PDF layout, it will be stored for later and autem.com will be updated automatically, using Selenium, with the last 4 numbers on the CNPJ identifier, as it requires.
 
 #3 – Update the current job on Localiza dashboard with pertinent information.
 
@@ -35,7 +35,7 @@ Each job needs to be filled with standard and changing data on it’s own panel 
 
 The last field to be filled within the current job’s panel is the invoice itself. It will be acquired on Nota Carioca website. 
 
-After logging in, the job’s location specific CNPJ that was extracted from the e-mail’s PDF will be inputted, and the site will offer the invoice, including a download option, after which, the file location will be stored and fed to Localiza.
+After logging in, the job’s location specific CNPJ that was extracted from the e-mail’s PDF will be filled in, and the site will offer the invoice, including a download option, after which, the file location will be stored and fed to Localiza.
 
 -
 
